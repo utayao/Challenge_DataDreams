@@ -49,7 +49,7 @@ class Model(object):
         self.build_input_op(train)
         self.logits = self._net(self.data_op, self._n_class, self.phase_train)
         self.prob_op = self.build_infer_op()
-        self.acc = self.build_evaluation_op(self.prob_op, self.label_op)
+        self.acc, self.precision, self.recall, self.f1 = self.build_evaluation_op(self.prob_op, self.label_op)
         if train:
             self.loss = self.build_loss_op(self.logits, self.label_op)
             self.summary = self.build_summary_op()
@@ -58,7 +58,7 @@ class Model(object):
 
         with tf.name_scope("summary"):
             tf.summary.scalar("loss", self.loss_op)
-            acc_op, precision, recall, f1 = self.evaluation_op
+            acc_op, precision, recall, f1 = self.evaluation_ops
             tf.summary.scalar("accuracy", acc_op)
             tf.summary.scalar("precision", precision)
             tf.summary.scalar("recall", recall)
@@ -67,4 +67,33 @@ class Model(object):
             merged = tf.summary.merge.all()
 
         return merged
-    
+
+    @property
+    def input_ops(self):
+        return (
+            self.data_op,
+            self.label_op,
+            self.phase_train
+        )
+
+    @property
+    def evaluation_ops(self):
+        return (
+            self.acc,
+            self.precision,
+            self.recall,
+            self.f1
+        )
+
+    @property
+    def loss_op(self):
+        return self.loss
+
+    @property
+    def summary_op(self):
+        return self.summary
+
+    @property
+    def infer_op(self):
+        return self.acc_op
+   
