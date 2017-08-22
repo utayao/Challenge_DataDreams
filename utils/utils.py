@@ -28,8 +28,11 @@ def read_image(img_path, size=None):
     return img
 
 
-def read_label(mask_path, binary=False):
+def read_label(mask_path, binary=False, size=None):
     img = ndimage.imread(mask_path, mode='L')
+    if size:
+        assert isinstance(size, tuple), "Size is not in tuple"
+        img = misc.imresize(img, size)
     if binary:
         img[img <= 127] = 0
         img[img > 127] = 1
