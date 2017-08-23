@@ -1,9 +1,9 @@
-import tf_args
 import sys
+
+from phase_1.step_1 import tf_args
 
 sys.path.append("../")
 import math
-from model import Model
 import tensorflow as tf
 from utils.data_generator import TrainDataGenerator
 import numpy as np

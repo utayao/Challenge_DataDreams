@@ -1,7 +1,8 @@
-import tf_args
-from tensorflow.python.platform import gfile
 import tensorflow as tf
-from trainer import UNetTrainer
+from tensorflow.python.platform import gfile
+
+from phase_1.step_1.trainer import UNetTrainer
+
 #from architecture import Unet
 
 FLAGS = tf.app.flags.FLAGS

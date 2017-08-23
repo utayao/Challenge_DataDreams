@@ -1,5 +1,7 @@
+import os
 import cv2
 import numpy as np
+import sklearn
 from scipy import misc
 from scipy import ndimage
 
@@ -43,3 +45,37 @@ def read_label(mask_path, binary=False, size=None):
 def makedir(path):
     if not os.path.exists(path):
         os.makedirs(path)
+
+
+def extract_random_patch_from_contour(image, label, patch_size, max_patches, cancer_ratio):
+    _, contours, _ = cv2.findContours(label, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    bounding_boxes = [cv2.boundingRect(c) for c in contours]
+    images = []
+    counter = 0
+    while counter < max_patches:
+        index = np.random.randint(0, len(bounding_boxes))
+        bounding_box_image = bounding_boxes[index]
+        x, y, w, h = bounding_box_image
+        image_bounding_box = image[y:y + h, x:x + w, :]
+        img = sklearn.feature_extraction.image.extract_patches_2d(image_bounding_box, patch_size=patch_size,
+                                                                  max_patches=1)
+        if intersection(img, contours[index]) > cancer_ratio:
+            images.append(img)
+            counter += 1
+
+    return np.array(images)
+
+
+def extract_patches(images, labels=None, max_patch=1, patch_size=(224, 224), counter=0, **kwargs):
+    if labels:
+        cancer_ratio = kwargs.get("cancer_ratio", 0.75)
+        images = extract_random_patch_from_contour(images[counter], labels[counter], patch_size=patch_size,
+                                                   max_patches=max_patch,
+                                                   cancer_ratio=cancer_ratio)
+        labels = np.ones_like(np.arange(max_patch, dtype=np.float))
+    else:
+        images = sklearn.feature_extraction.image.extract_patches_2d(images[counter], patch_size=patch_size,
+                                                                     max_patches=max_patch)
+        labels = np.zeros_like(np.arange(max_patch, dtype=np.float))
+
+    return images, labels, (counter + max_patch) % len(images)
