@@ -2,6 +2,7 @@ import os
 import glob
 import numpy as np
 import sklearn
+from sklearn.model_selection import KFold
 import utils
 
 
@@ -35,6 +36,7 @@ class TrainDataGenerator(Generator):
         self._non_cancer_data_augmentation = non_cancer_data_augmentation
         self._shuffle = shuffle
         self._subset = subset
+        self._normalize = normalize
         cancer_image_path = np.sort(glob.glob(os.path.join(cancer_image_path, "cancer_subset0[0-8]/*.tiff")))
         non_cancer_image_path = np.sort(glob.glob(os.path.join(cancer_image_path, "non_cancer_subset/*.tiff")))
         label_path = np.sort(glob.glob(os.path.join(label_path, "*.png")))
@@ -42,19 +44,38 @@ class TrainDataGenerator(Generator):
         self.cancer_images, self.cancer_labels = self.read_images_to_arr(images=cancer_image_path, subset=subset,
                                                                          labels=label_path)
         self.non_cancer_images = self.read_images_to_arr(images=non_cancer_image_path, subset=subset)
+        self.cancer_train_indices, self.non_cancer_train_indices = None, None
+        if not os.path.exists("../phase_1/non_cancer_splits.txt") or not os.path.exists("../phase_1/cancer_splits.txt"):
+            self._splits = KFold(n_splits=cv, shuffle=True)
+            self.cancer_train_indices = [(train_index, test_index) for train_index, test_index in
+                                         self._splits(self.cancer_images)]
+            self.non_cancer_train_indices = [(train_index, test_index) for train_index, test_index in
+                                             self._splits(self.non_cancer_images)]
+            utils.save_obj(self.cancer_train_indices, "../phase_1/cancer_splits.txt")
+            utils.save_obj(self.non_cancer_train_indices, "../phase_1/non_cancer_splits.txt")
+
+        else:
+            self.cancer_train_indices = utils.load_obj("../phase_1/cancer_splits.txt")
+            self.non_cancer_train_indices = utils.load_obj("../phase_1/non_cancer_splits.txt")
+        assert self.cancer_train_indices or self.non_cancer_train_indices, " list can not be empty"
         self.cancer_image_counter = 0
         self.non_cancer_image_counter = 0
 
-    def sample_batch(self, batch_size, cancer_ratio=0.5):
+    def sample_batch(self, batch_size, cv, cancer_ratio=0.5, index=0):
         cancer_batch_size = int(cancer_ratio * batch_size)
         non_cancer_batch_size = batch_size - cancer_batch_size
-        cancer_images, cancer_labels, self.cancer_image_counter = utils.extract_patches(images=self.cancer_images,
-                                                                                        labels=self.cancer_labels,
+        cv_cancer_images, cv_cancer_labels = self.cancer_images[self.cancer_train_indices[cv][index]], \
+                                             self.cancer_labels[
+                                                 self.cancer_train_indices[cv][index]]
+        cv_non_cancer_images = self.non_cancer_images[self.cancer_train_indices[cv][index]]
+
+        cancer_images, cancer_labels, self.cancer_image_counter = utils.extract_patches(images=cv_cancer_images,
+                                                                                        labels=cv_cancer_labels,
                                                                                         max_patch=cancer_batch_size,
                                                                                         patch_size=self._image_resize,
                                                                                         counter=self.cancer_image_counter)
         non_cancer_images, non_cancer_labels, self.non_cancer_image_counter = utils.extract_patches(
-            images=self.non_cancer_images, label=None,
+            images=cv_non_cancer_images, label=None,
             max_patch=non_cancer_batch_size, patch_size=self._image_resize,
             counter=self.non_cancer_image_counter)
         if self._cancer_data_augmentation:
@@ -70,4 +91,7 @@ class TrainDataGenerator(Generator):
         labels = np.hstack((cancer_labels, non_cancer_labels))
         if self._shuffle:
             images, labels = sklearn.utils.shuffle(images, labels)
+        if self._normalize:
+            for i, img in enumerate(images):
+                images[i] = utils.normalize(img, between=[-1, 1])
         return images, labels

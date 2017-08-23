@@ -7,6 +7,7 @@ import tensorflow as tf
 DISPLAY_ITERS = 10
 EVAL_ITERS = 100
 SAVE_ITERS = 150
+EVAL_COUNT = 20
 IMAGES_MEAN_PATH = "../data"
 IMAGES_STD_PATH = "../data"
 

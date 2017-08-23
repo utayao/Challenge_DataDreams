@@ -15,10 +15,11 @@ from time import clock
 
 
 class UNetTrainer(object):
-    def __init__(self, _net, data_dir, train_dir, data_augmentation=None, cv=2, subset=True, image_resize=(572, 572),
+    def __init__(self, _net, data_dir, train_dir, cancer_data_augmentation=None, non_cancer_data_augmentation=None,
+                 cv=2, subset=True, image_resize=(572, 572),
                  batch_size=32,
                  normalize=False):
-        #self._net = Model(_net, image_resize, label_resize)
+        # self._net = Model(_net, image_resize, label_resize)
         self._net = None
         self.data_dir = data_dir
         self.train_dir = train_dir
@@ -26,7 +27,8 @@ class UNetTrainer(object):
         self._job_dir = JobDir(self.train_dir)
         self._batch_size = batch_size
         self._train_data_loader = TrainDataGenerator(
-            data_dir, data_augmentation,
+            data_dir, cancer_data_augmentation=cancer_data_augmentation,
+            non_cancer_data_augmentation=non_cancer_data_augmentation,
             shuffle=True,
             cross_validation=cv,
             subset=subset,
@@ -41,7 +43,8 @@ class UNetTrainer(object):
         self._net.build(train=True, batch_size=self._batch_size)
         self.global_step = tf.Variable(0, trainable=False)
         self.build_train_op(
-            self._net.loss, optimizer=tf.train.AdamOptimizer(FLAGS.learning_rate),
+            self._net.loss,
+            optimizer=tf.train.RMSPropOptimizer(FLAGS.learning_rate, decay=0.9, momentum=FLAGS.momentum, epsilon=1.0),
             max_gradient_norm=FLAGS.MAX_GRADIENT_NORM, global_step=self.global_step
         )
         self.saver = tf.train.Saver(tf.global_variables(), max_to_keep=1)
@@ -61,7 +64,7 @@ class UNetTrainer(object):
                 gradient_maps = [
                     (tf.clip_by_norm(gradient, max_gradient_norm), param)
                     for gradient, param in gradient_maps
-                ]
+                    ]
             train_op = optimizer.apply_gradients(
                 gradient_maps, global_step=global_step
             )
@@ -71,9 +74,9 @@ class UNetTrainer(object):
         """ produce a batch of training data """
         if train:
 
-            return self._train_data_loader.sample_batch(self._batch_size, cv)
+            return self._train_data_loader.sample_batch(self._batch_size, cv, index=0)
         else:
-            return self._train_data_loader.eval_data(self._batch_size, cv)
+            return self._train_data_loader.sample(self._batch_size, cv, index=1)
 
     def feed_dict(self, cv, train=True):
         """
@@ -114,14 +117,14 @@ class UNetTrainer(object):
         :param sess:
         :return:
         """
-        #config = tf.ConfigProto(allow_soft_placement=True)
+        # config = tf.ConfigProto(allow_soft_placement=True)
         config = tf.GPUOptions(per_process_gpu_memory_fraction=0.95)
-        #config.gpu_options.allow_growth = True
+        # config.gpu_options.allow_growth = True
         # cross validate
         for each_cross_validation in range(self.cross_validaiton):
             # Initialize session
             sess = sess or tf.Session(config=tf.ConfigProto(gpu_options=config))
-            #sess = sess or tf.Session(config=config)
+            # sess = sess or tf.Session(config=config)
             # Get train log
             train_writer = tf.summary.FileWriter(
                 self._job_dir.join_path(
@@ -157,9 +160,7 @@ class UNetTrainer(object):
                     ))
                 if iter_idx and iter_idx % tf_args.EVAL_ITERS == 0:
                     loss_arr = acc_arr = dice_arr = []
-                    for eval_start in range(int(
-                                    math.ceil(self._train_data_loader.eval_counts[each_cross_validation] * 1.0) / (
-                                        self._batch_size * 1.0))):
+                    for eval_start in range(tf_args.EVAL_COUNT):
                         _, summary, eval_loss, eval_acc, eval_dice = sess.run(run_ops, feed_dict=self.feed_dict(
                             each_cross_validation,
                             train=False))
@@ -178,4 +179,4 @@ class UNetTrainer(object):
                         (end - start), train_loss, acc, dice
                     ))
                     self.saver.save(sess, self._job_dir.join_path(ckpt_path, "weights-ckpt"),
-global_step=self.global_step)
+                                    global_step=self.global_step)

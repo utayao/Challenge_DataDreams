@@ -3,7 +3,7 @@ from tensorflow.python.platform import gfile
 
 from phase_1.step_1.trainer import UNetTrainer
 
-#from architecture import Unet
+# from architecture import Unet
 
 FLAGS = tf.app.flags.FLAGS
 
@@ -17,9 +17,15 @@ def main(argv=None):
     else:
         sess = None
 
-    data_augmentation = None
+    cancer_data_augmentation = {
+
+    }
+    non_cancer_data_augmentation = {
+
+    }
     gfile.MakeDirs(FLAGS.train_dir)
-    trainer = UNetTrainer(None, FLAGS.data_dir, FLAGS.train_dir, data_augmentation=data_augmentation, cv=FLAGS.cv,
+    trainer = UNetTrainer(None, FLAGS.data_dir, FLAGS.train_dir, cance_data_augmentation=cancer_data_augmentation,
+                          non_cancer_data_augmentation=non_cancer_data_augmentation, cv=FLAGS.cv,
                           subset=FLAGS.subset,
                           image_resize=(FLAGS.image_resize, FLAGS.image_resize),
                           batch_size=FLAGS.batch_size,
