@@ -33,6 +33,9 @@ def adjust_hue(img, kwargs):
 def adjust_staturation(img, kwargs):
     return tf.image.adjust_saturation(img, 0.25)
 
+def normalize(img,between=[-1,1]):
+    a,b = between
+    return ((b-a)* (img - np.min(img))/(np.max(img) - np.min(img))) + a
 
 def global_funcs(func):
     return globals()[func]
