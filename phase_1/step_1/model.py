@@ -1,8 +1,9 @@
 import tensorflow as tf
+import numpy as np
 
 
 class Model(object):
-    def __init__(self, net, image_size=(224, 224), n_classes=2):
+    def __init__(self, net, image_size, n_classes):
         self._net = net
         self._image_size = image_size
         self._n_class = n_classes
@@ -47,7 +48,7 @@ class Model(object):
 
     def build(self, train=True):
         self.build_input_op(train)
-        self.logits = self._net(self.data_op, self._n_class, self.phase_train)
+        self.logits = self._net(inp=self.data_op, n_classes=self._n_class, train=self.phase_train)
         self.prob_op = self.build_infer_op()
         self.acc, self.precision, self.recall, self.f1 = self.build_evaluation_op(self.prob_op, self.label_op)
         if train:

@@ -1,38 +1,38 @@
 import sys
 
-from phase_1.step_1 import tf_args
+from step_1 import tf_args
 
 sys.path.append("../")
 import math
 import tensorflow as tf
 from utils.data_generator import TrainDataGenerator
 import numpy as np
-
+from model import Model
 FLAGS = tf.app.flags.FLAGS
 
 from utils.data import JobDir
 from time import clock
 
 
-class UNetTrainer(object):
+class NetTrainer(object):
     def __init__(self, _net, data_dir, train_dir, cancer_data_augmentation=None, non_cancer_data_augmentation=None,
-                 cv=2, subset=True, image_resize=(572, 572),
+                 cv=2, subset=True, image_resize=(572, 572),n_classes=2,
                  batch_size=32,
                  normalize=False):
-        # self._net = Model(_net, image_resize, label_resize)
-        self._net = None
+        self._net = Model(_net, image_resize,n_classes)
+        print self._net
         self.data_dir = data_dir
         self.train_dir = train_dir
         self.cross_validaiton = cv
         self._job_dir = JobDir(self.train_dir)
         self._batch_size = batch_size
         self._train_data_loader = TrainDataGenerator(
-            data_dir, cancer_data_augmentation=cancer_data_augmentation,
+            train_dir=data_dir, cancer_data_augmentation=cancer_data_augmentation,
             non_cancer_data_augmentation=non_cancer_data_augmentation,
             shuffle=True,
-            cross_validation=cv,
+            cv=cv,
+            image_resize=image_resize,
             subset=subset,
-            image_resize_size=image_resize,
             normalize=normalize
         )
         self.global_step = None
@@ -40,7 +40,7 @@ class UNetTrainer(object):
         self.train_op = None
 
     def build(self):
-        self._net.build(train=True, batch_size=self._batch_size)
+        self._net.build(train=True)
         self.global_step = tf.Variable(0, trainable=False)
         self.build_train_op(
             self._net.loss,
@@ -87,6 +87,7 @@ class UNetTrainer(object):
         """
         data_op, label_op, phase_train = self._net.input_ops
         data, label = self.batch_data(cv, train)
+        #print data, label
         return {data_op: data, label_op: label, phase_train: train}
 
     def restore(self, sess, checkpoint_path):
@@ -107,7 +108,6 @@ class UNetTrainer(object):
                     restore_vars.append(curr_var)
         saver = tf.train.Saver(restore_vars)
         saver.restore(sess, checkpoint_path)
-        print(uninitialized_variables)
         sess.run(tf.variables_initializer(uninitialized_variables))
 
     def train(self, max_iter=1000, sess=None):
@@ -122,6 +122,8 @@ class UNetTrainer(object):
         # config.gpu_options.allow_growth = True
         # cross validate
         for each_cross_validation in range(self.cross_validaiton):
+
+            #print self.feed_dict(each_cross_validation,True)
             # Initialize session
             sess = sess or tf.Session(config=tf.ConfigProto(gpu_options=config))
             # sess = sess or tf.Session(config=config)

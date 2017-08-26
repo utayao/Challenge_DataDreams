@@ -1,7 +1,8 @@
 import os
 import cv2
 import numpy as np
-import sklearn
+from sklearn.feature_extraction import image as sklearn_image
+import pickle
 from scipy import misc
 from scipy import ndimage
 
@@ -36,8 +37,8 @@ def read_label(mask_path, binary=False, size=None):
         assert isinstance(size, tuple), "Size is not in tuple"
         img = misc.imresize(img, size)
     if binary:
-        img[img <= 127] = 0
-        img[img > 127] = 1
+        img[img <= 127] = 1
+        img[img > 127] = 0
         return img
     return img
 
@@ -47,8 +48,37 @@ def makedir(path):
         os.makedirs(path)
 
 
+def intersection(img, contour):
+    print img, contour
+
+
+def save_obj(obj, obj_path):
+    makedir(os.path.dirname(obj_path))
+    with open(obj_path, "wb") as f:
+        pickle.dump(obj, f)
+
+
+def load_obj(obj_path):
+    with open(obj_path, "rb") as f:
+        return pickle.load(f)
+
+
+def extract_patches_2d(image, bounding_box, label, patch_size=(224, 224), max_patches=1):
+    x, y, w, h = bounding_box
+
+    rand_x, rand_y, w, h = np.random.randint(low=x, high=x + w, size=1)[0], \
+                           np.random.randint(low=y, high=y + h, size=1)[0], patch_size[0], patch_size[1]
+    label_image = label[rand_y:rand_y + h, rand_x:rand_x + w]
+    intersection = np.count_nonzero(label_image) * 1.0 / (
+    np.count_nonzero(label_image) + len(np.where(label_image == 0)))
+    # return label_image,intersection
+    print rand_x,rand_y,w,h
+    return image[rand_y:rand_y + h, rand_x:rand_x + w, :], intersection
+
+
 def extract_random_patch_from_contour(image, label, patch_size, max_patches, cancer_ratio):
     _, contours, _ = cv2.findContours(label, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
     bounding_boxes = [cv2.boundingRect(c) for c in contours]
     images = []
     counter = 0
@@ -57,9 +87,10 @@ def extract_random_patch_from_contour(image, label, patch_size, max_patches, can
         bounding_box_image = bounding_boxes[index]
         x, y, w, h = bounding_box_image
         image_bounding_box = image[y:y + h, x:x + w, :]
-        img = sklearn.feature_extraction.image.extract_patches_2d(image_bounding_box, patch_size=patch_size,
-                                                                  max_patches=1)
-        if intersection(img, contours[index]) > cancer_ratio:
+        img, intersection = extract_patches_2d(image, bounding_box_image, label, patch_size=patch_size,
+                                               max_patches=1)
+        if intersection > cancer_ratio:
+            print img.shape
             images.append(img)
             counter += 1
 
@@ -67,15 +98,15 @@ def extract_random_patch_from_contour(image, label, patch_size, max_patches, can
 
 
 def extract_patches(images, labels=None, max_patch=1, patch_size=(224, 224), counter=0, **kwargs):
-    if labels:
+    if labels is not None:
         cancer_ratio = kwargs.get("cancer_ratio", 0.75)
         images = extract_random_patch_from_contour(images[counter], labels[counter], patch_size=patch_size,
                                                    max_patches=max_patch,
                                                    cancer_ratio=cancer_ratio)
         labels = np.ones_like(np.arange(max_patch, dtype=np.float))
     else:
-        images = sklearn.feature_extraction.image.extract_patches_2d(images[counter], patch_size=patch_size,
-                                                                     max_patches=max_patch)
+        images = sklearn_image.extract_patches_2d(images[counter], patch_size=patch_size,
+                                                  max_patches=max_patch)
         labels = np.zeros_like(np.arange(max_patch, dtype=np.float))
 
     return images, labels, (counter + max_patch) % len(images)
