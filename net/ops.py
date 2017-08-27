@@ -44,3 +44,7 @@ def dropout(inp, keep_prob,name):
     with tf.name_scope(name):
         dropout = tf.nn.dropout(inp,keep_prob=keep_prob,name="dropout")
     return dropout
+
+def concat(axis,values,name="concat"):
+
+    return tf.concat(axis=axis,values=values,name=name)

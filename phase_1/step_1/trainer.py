@@ -26,15 +26,15 @@ class NetTrainer(object):
         self.cross_validaiton = cv
         self._job_dir = JobDir(self.train_dir)
         self._batch_size = batch_size
-        self._train_data_loader = TrainDataGenerator(
-            train_dir=data_dir, cancer_data_augmentation=cancer_data_augmentation,
-            non_cancer_data_augmentation=non_cancer_data_augmentation,
-            shuffle=True,
-            cv=cv,
-            image_resize=image_resize,
-            subset=subset,
-            normalize=normalize
-        )
+        # self._train_data_loader = TrainDataGenerator(
+        #     train_dir=data_dir, cancer_data_augmentation=cancer_data_augmentation,
+        #     non_cancer_data_augmentation=non_cancer_data_augmentation,
+        #     shuffle=True,
+        #     cv=cv,
+        #     image_resize=image_resize,
+        #     subset=subset,
+        #     normalize=normalize
+        # )
         self.global_step = None
         self.saver = None
         self.train_op = None
@@ -86,7 +86,9 @@ class NetTrainer(object):
         :return: return dict of input and labels
         """
         data_op, label_op, phase_train = self._net.input_ops
-        data, label = self.batch_data(cv, train)
+        #data, label = self.batch_data(cv, train)
+        data = np.zeros((10,224,224,3))
+        label = np.zeros((10,))
         #print data, label
         return {data_op: data, label_op: label, phase_train: train}
 
