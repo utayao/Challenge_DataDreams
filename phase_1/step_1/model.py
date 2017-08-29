@@ -33,8 +33,8 @@ class Model(object):
                 shape=[None, self._image_size[0], self._image_size[1], 3]
             )
             self.label_op = tf.placeholder(
-                tf.float32,
-                shape=[None, self._n_class]
+                tf.int64,
+                shape=[None,self._n_class]
             )
             self.phase_train = tf.placeholder(tf.bool, name="phase_train")
 
@@ -42,10 +42,9 @@ class Model(object):
         with tf.name_scope("evaluation"):
             recall = tf.metrics.recall(label_op, prob_op)
             precision = tf.metrics.precision(label_op, prob_op)
-            #recall = tf.cast(recall,tf.float32)
-            #precision = tf.cast(precision,tf.float32)
             f1 = tf.multiply(2.0, tf.divide(tf.multiply(recall, precision), tf.add(recall, precision)))
             accuracy = tf.metrics.accuracy(label_op, prob_op)
+
         return accuracy, precision, recall, f1
 
     def build(self, train=True):
@@ -63,10 +62,10 @@ class Model(object):
         with tf.name_scope("summary"):
             tf.summary.scalar("loss", self.loss_op)
             acc_op, precision, recall, f1 = self.evaluation_ops
-            tf.summary.scalar("accuracy", acc_op)
-            tf.summary.scalar("precision", precision)
-            tf.summary.scalar("recall", recall)
-            tf.summary.scalar("f1", f1)
+            tf.summary.scalar("accuracy", acc_op[0])
+            tf.summary.scalar("precision", precision[0])
+            tf.summary.scalar("recall", recall[0])
+            tf.summary.scalar("f1", f1[0])
 
             merged = tf.summary.merge_all()
 

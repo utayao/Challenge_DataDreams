@@ -63,6 +63,13 @@ def load_obj(obj_path):
         return pickle.load(f)
 
 
+def one_hot_vector(labels):
+    labels = np.array(labels,dtype=np.int)
+    res = np.zeros((labels.size,int(labels.max())+1),dtype=np.int64)
+    res[np.arange(labels.size),labels] = 1
+    return res
+
+
 def extract_patches_2d(image, bounding_box, label, patch_size=(224, 224), max_patches=1):
     x, y, w, h = bounding_box
 
@@ -72,7 +79,6 @@ def extract_patches_2d(image, bounding_box, label, patch_size=(224, 224), max_pa
     intersection = np.count_nonzero(label_image) * 1.0 / (
     np.count_nonzero(label_image) + len(np.where(label_image == 0)))
     # return label_image,intersection
-    print rand_x,rand_y,w,h
     return image[rand_y:rand_y + h, rand_x:rand_x + w, :], intersection
 
 
@@ -90,7 +96,6 @@ def extract_random_patch_from_contour(image, label, patch_size, max_patches, can
         img, intersection = extract_patches_2d(image, bounding_box_image, label, patch_size=patch_size,
                                                max_patches=1)
         if intersection > cancer_ratio:
-            print img.shape
             images.append(img)
             counter += 1
 

@@ -49,7 +49,6 @@ class TrainDataGenerator(Generator):
         self.cancer_images, self.cancer_labels = self.read_images_to_arr(images=cancer_images_path, subset=subset,
                                                                          labels=True)
         self.non_cancer_images = self.read_images_to_arr(images=non_cancer_images_path, subset=subset, labels=False)
-        print self.cancer_images.shape, self.cancer_labels.shape
         self.cancer_train_indices, self.non_cancer_train_indices = None, None
         if not os.path.exists("../phase_1/non_cancer_splits.txt") or not os.path.exists("../phase_1/cancer_splits.txt"):
             self._splits = KFold(n_splits=cv, shuffle=True)
@@ -57,6 +56,7 @@ class TrainDataGenerator(Generator):
                                          self._splits.split(self.cancer_images)]
             self.non_cancer_train_indices = [(train_index, test_index) for train_index, test_index in
                                              self._splits.split(self.non_cancer_images)]
+            print self.cancer_train_indices, self.non_cancer_train_indices
             utils.save_obj(self.cancer_train_indices, "../phase_1/cancer_splits.txt")
             utils.save_obj(self.non_cancer_train_indices, "../phase_1/non_cancer_splits.txt")
 
@@ -71,7 +71,6 @@ class TrainDataGenerator(Generator):
     def sample_batch(self, batch_size, cv, cancer_ratio=0.5, index=0):
         cancer_batch_size = int(cancer_ratio * batch_size)
         non_cancer_batch_size = batch_size - cancer_batch_size
-        print self.cancer_train_indices[cv][index]
         cv_cancer_images, cv_cancer_labels = self.cancer_images[self.cancer_train_indices[cv][index]], \
                                              self.cancer_labels[
                                                  self.cancer_train_indices[cv][index]]
@@ -97,10 +96,11 @@ class TrainDataGenerator(Generator):
 
         images = np.concatenate((cancer_images, non_cancer_images),axis=0)
         labels = np.concatenate((cancer_labels, non_cancer_labels),axis=0)
-        print non_cancer_images.shape, non_cancer_labels.shape
         if self._shuffle:
             images, labels = sklearn.utils.shuffle(images, labels)
         if self._normalize:
             for i, img in enumerate(images):
                 images[i] = utils.normalize(img, between=[-1, 1])
-        return images, labels
+        #labels = utils.one_hot_vector(labels)
+        #print labels
+        return images, utils.one_hot_vector(labels)

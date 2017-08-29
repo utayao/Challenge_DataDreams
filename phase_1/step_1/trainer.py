@@ -86,9 +86,6 @@ class NetTrainer(object):
         """
         data_op, label_op, phase_train = self._net.input_ops
         data, label = self.batch_data(cv, train)
-        #data = np.zeros((10,256,256,3))
-        #label = np.zeros((10,))
-        #print data, label
         return {data_op: data, label_op: label, phase_train: train}
 
     def restore(self, sess, checkpoint_path):
@@ -145,6 +142,9 @@ class NetTrainer(object):
                 print 'weights restored'
             else:
                 sess.run(tf.global_variables_initializer())
+                sess.run(tf.local_variables_initializer())
+                #sess.run(tf.variables_initializer([tf.get_variable(name) for name in  sess.run(tf.report_uninitialized_variables())]))
+
             # Build Forward ops
             run_ops = ([self.train_op, self._net.summary_op, self._net.loss_op] +
                        list(self._net.evaluation_ops))
@@ -152,14 +152,14 @@ class NetTrainer(object):
             prev_train_loss = np.Inf
             for iter_idx in range(max_iter):
                 start = clock()
-                _, summary, train_loss, acc, dice = sess.run(run_ops,
+                _, summary, train_loss, acc, precision, recall, f1 = sess.run(run_ops,
                                                              feed_dict=self.feed_dict(each_cross_validation))
                 train_writer.add_summary(summary, self.global_step.eval(session=sess))
                 # Display the values
                 if iter_idx and iter_idx % tf_args.DISPLAY_ITERS == 0:
                     end = clock()
                     print("TRAINING:- Time:{} per sec, loss: {}, accuracy: {}, dice: {}".format(
-                        (end - start), train_loss, acc, dice
+                        (end - start), train_loss, acc, precision
                     ))
                 if iter_idx and iter_idx % tf_args.EVAL_ITERS == 0:
                     loss_arr = acc_arr = dice_arr = []
