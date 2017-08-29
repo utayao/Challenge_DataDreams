@@ -20,21 +20,20 @@ class NetTrainer(object):
                  batch_size=32,
                  normalize=False):
         self._net = Model(_net, image_resize,n_classes)
-        print self._net
         self.data_dir = data_dir
         self.train_dir = train_dir
         self.cross_validaiton = cv
         self._job_dir = JobDir(self.train_dir)
         self._batch_size = batch_size
-        # self._train_data_loader = TrainDataGenerator(
-        #     train_dir=data_dir, cancer_data_augmentation=cancer_data_augmentation,
-        #     non_cancer_data_augmentation=non_cancer_data_augmentation,
-        #     shuffle=True,
-        #     cv=cv,
-        #     image_resize=image_resize,
-        #     subset=subset,
-        #     normalize=normalize
-        # )
+        self._train_data_loader = TrainDataGenerator(
+            train_dir=data_dir, cancer_data_augmentation=cancer_data_augmentation,
+            non_cancer_data_augmentation=non_cancer_data_augmentation,
+            shuffle=True,
+            cv=cv,
+            image_resize=image_resize,
+            subset=subset,
+            normalize=normalize
+        )
         self.global_step = None
         self.saver = None
         self.train_op = None
@@ -44,12 +43,12 @@ class NetTrainer(object):
         self.global_step = tf.Variable(0, trainable=False)
         self.build_train_op(
             self._net.loss,
-            optimizer=tf.train.RMSPropOptimizer(FLAGS.learning_rate, decay=0.9, momentum=FLAGS.momentum, epsilon=1.0),
+            optimizer=tf.train.RMSPropOptimizer(FLAGS.learning_rate, decay=0.9, momentum=0.9, epsilon=1.0),
             max_gradient_norm=FLAGS.MAX_GRADIENT_NORM, global_step=self.global_step
         )
         self.saver = tf.train.Saver(tf.global_variables(), max_to_keep=1)
 
-    def build_train_op(self, loss_op, global_step=None, optimizer=tf.train.AdamOptimizer(), max_gradient_norm=0):
+    def build_train_op(self, loss_op, global_step=None, optimizer=None, max_gradient_norm=0):
         """
         Build train operator for trainer
         :param loss_op:
@@ -60,11 +59,11 @@ class NetTrainer(object):
         """
         with tf.name_scope("train"):
             gradient_maps = optimizer.compute_gradients(loss_op)
-            if max_gradient_norm > 0:
-                gradient_maps = [
-                    (tf.clip_by_norm(gradient, max_gradient_norm), param)
-                    for gradient, param in gradient_maps
-                    ]
+            # if max_gradient_norm > 0:
+            #     gradient_maps = [
+            #         (tf.clip_by_norm(gradient, max_gradient_norm), param)
+            #         for gradient, param in gradient_maps
+            #         ]
             train_op = optimizer.apply_gradients(
                 gradient_maps, global_step=global_step
             )
@@ -76,7 +75,7 @@ class NetTrainer(object):
 
             return self._train_data_loader.sample_batch(self._batch_size, cv, index=0)
         else:
-            return self._train_data_loader.sample(self._batch_size, cv, index=1)
+            return self._train_data_loader.sample_batch(self._batch_size, cv, index=1)
 
     def feed_dict(self, cv, train=True):
         """
@@ -86,9 +85,9 @@ class NetTrainer(object):
         :return: return dict of input and labels
         """
         data_op, label_op, phase_train = self._net.input_ops
-        #data, label = self.batch_data(cv, train)
-        data = np.zeros((10,224,224,3))
-        label = np.zeros((10,))
+        data, label = self.batch_data(cv, train)
+        #data = np.zeros((10,256,256,3))
+        #label = np.zeros((10,))
         #print data, label
         return {data_op: data, label_op: label, phase_train: train}
 

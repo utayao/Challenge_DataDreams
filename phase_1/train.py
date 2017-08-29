@@ -2,7 +2,7 @@ import tensorflow as tf
 from tensorflow.python.platform import gfile
 
 from step_1.trainer import NetTrainer
-from architectures.inception_v3 import Net
+from architectures.inception_v3_slim import Net
 
 FLAGS = tf.app.flags.FLAGS
 

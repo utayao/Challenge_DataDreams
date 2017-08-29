@@ -11,11 +11,12 @@ class Model(object):
     def build_infer_op(self):
         with tf.name_scope("inference"):
             self.acc_op = tf.nn.softmax(self.logits)
+        return self.acc_op
 
     def build_loss_op(self, logits_op, label_op, class_weights=None):
         with tf.name_scope("xentropy_loss"):
             if not class_weights:
-                return tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(logits_op, label_op))
+                return tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=logits_op,labels=label_op,name="xentropy"))
             else:
                 class_weights = tf.constant(np.array(class_weights, dtype=np.float32))
                 weight_map = tf.multiply(label_op, class_weights)
@@ -41,8 +42,9 @@ class Model(object):
         with tf.name_scope("evaluation"):
             recall = tf.metrics.recall(label_op, prob_op)
             precision = tf.metrics.precision(label_op, prob_op)
-            f1 = tf.multiply(2, tf.divide(tf.multiply(recall, precision), tf.add(recall, precision)))
-
+            #recall = tf.cast(recall,tf.float32)
+            #precision = tf.cast(precision,tf.float32)
+            f1 = tf.multiply(2.0, tf.divide(tf.multiply(recall, precision), tf.add(recall, precision)))
             accuracy = tf.metrics.accuracy(label_op, prob_op)
         return accuracy, precision, recall, f1
 
@@ -50,6 +52,7 @@ class Model(object):
         self.build_input_op(train)
         self.logits = self._net(inp=self.data_op, n_classes=self._n_class, train=self.phase_train)
         self.prob_op = self.build_infer_op()
+
         self.acc, self.precision, self.recall, self.f1 = self.build_evaluation_op(self.prob_op, self.label_op)
         if train:
             self.loss = self.build_loss_op(self.logits, self.label_op)
@@ -65,7 +68,7 @@ class Model(object):
             tf.summary.scalar("recall", recall)
             tf.summary.scalar("f1", f1)
 
-            merged = tf.summary.merge.all()
+            merged = tf.summary.merge_all()
 
         return merged
 

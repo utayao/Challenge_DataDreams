@@ -7,6 +7,7 @@ import tf_activations
 import tf_initializations
 from ops import batch_norm, dropout
 
+
 def atrous_conv(
         inp, kernel_shape,
         num_output, weight_initializer={
@@ -36,24 +37,23 @@ def atrous_conv(
         weights = tf_initializations.get_weights(weight_initializer, kernel_shape, name)
         bias = tf_initializations.get_bias(bias_initializer, num_output, name)
         assert any([isinstance(weights, object), isinstance(bias, object)]), 'weights or bias can not be None'
-        conv_op = tf.nn.convolution(inp, weights, padding,strides=strides, dilation_rate=[atrous_height, atrous_width], name='conv')
+        conv_op = tf.nn.convolution(inp, weights, padding, strides=strides, dilation_rate=[atrous_height, atrous_width],
+                                    name='conv')
         bias_add_op = tf.nn.bias_add(conv_op, bias, name='bias_add')
     if activation_func:
         bias_add_op = tf_activations.get(activation_func)(bias_add_op)
     assert isinstance(bias_add_op, object)
     if print_shape:
-        print "Layer type: {} shape: {}".format(name,tf_utils.get_inp_shape(bias_add_op))
+        print "Layer type: {} shape: {}".format(name, tf_utils.get_inp_shape(bias_add_op))
     if batch_norm_func:
-        assert "phase_train" in batch_norm_func,"phase train should be present in dict"
-        bias_add_op = batch_norm(bias_add_op,batch_norm_func["phase_train"],"batch_norm")
+        assert "phase_train" in batch_norm_func, "phase train should be present in dict"
+        bias_add_op = batch_norm(bias_add_op, batch_norm_func["phase_train"], "batch_norm")
     if dropout_func:
-        assert "keep_prob" in dropout_func,"keep_prob should be present in dict"
+        assert "keep_prob" in dropout_func, "keep_prob should be present in dict"
 
-        bias_add_op = dropout(bias_add_op,keep_prob=dropout_func["keep_prob"])
+        bias_add_op = dropout(bias_add_op, keep_prob=dropout_func["keep_prob"], name=name)
 
     return bias_add_op
-
-
 
 
 def conv(
@@ -95,27 +95,28 @@ def conv(
         weights = tf_initializations.get_weights(weight_initializer, kernel_shape, name)
         bias = tf_initializations.get_bias(bias_initializer, num_output, name)
         assert any([isinstance(weights, object), isinstance(bias, object)]), 'weights or bias can not be None'
-        conv_op = tf.nn.convolution(inp, weights, padding,strides=strides, name='conv')
+        conv_op = tf.nn.convolution(inp, weights, padding, strides=strides, name='conv')
         bias_add_op = tf.nn.bias_add(conv_op, bias, name='bias_add')
     if activation_func:
         bias_add_op = tf_activations.get(activation_func)(bias_add_op)
     assert isinstance(bias_add_op, object)
     if print_shape:
-        print "Layer type: {} shape: {}".format(name,tf_utils.get_inp_shape(bias_add_op))
+        print "Layer type: {} shape: {}".format(name, tf_utils.get_inp_shape(bias_add_op))
 
     if batch_norm_func:
-        assert "phase_train" in batch_norm_func,"phase train should be present in dict"
-        bias_add_op = batch_norm(bias_add_op,batch_norm_func["phase_train"],"batch_norm")
+        assert "phase_train" in batch_norm_func, "phase train should be present in dict"
+        bias_add_op = batch_norm(bias_add_op, batch_norm_func["phase_train"], "batch_norm")
     if dropout_func:
-        assert "keep_prob" in dropout_func,"keep_prob should be present in dict"
-        bias_add_op = dropout(bias_add_op,keep_prob=dropout_func["keep_prob"])
+        assert "keep_prob" in dropout_func, "keep_prob should be present in dict"
+        bias_add_op = dropout(bias_add_op, keep_prob=dropout_func["keep_prob"], name=name)
 
     return bias_add_op
+
 
 def atrous_pool(
         inp,
         kernel_shape=(2, 2),
-        stride=(1,1),
+        stride=(1, 1),
         atrous_stride=(2, 2),
         pooling_type="MAX",
         padding="VALID",
@@ -148,6 +149,7 @@ def atrous_pool(
 
         return pool_op
 
+
 def pool(
         inp,
         kernel_shape=(2, 2),
@@ -179,7 +181,6 @@ def pool(
         )
         if print_shape:
             print "Layer type: {} shape: {}".format(name, tf_utils.get_inp_shape(pool_op))
-
 
         return pool_op
 
@@ -217,3 +218,47 @@ def upsampling(inp, size=(2, 2), name="upsampling"):
     H_multiplier = H * size[0]
     W_multiplier = W * size[1]
     return tf.image.resize_nearest_neighbor(inp, size=(H_multiplier, W_multiplier), name=name)
+
+def fc(
+        inp,
+        num_output, weight_initializer={
+            "name": "random_normal",
+            "mean": 0.0,
+            "stddev": 1.0,
+            "restore":False
+        },
+        bias_initializer={
+            "name": "random_normal",
+            "mean": 0.0,
+            "stddev": 1.0,
+            "restore":False
+        },
+        activation_func=None,
+        dropout_func=None,
+        batch_norm_func=None,
+        restore=False,
+        print_shape=False,
+        name="fc"
+):
+    name = tf_utils.get_unique_name(name)
+    inp_shape = tf_utils.get_inp_shape(inp)
+    with tf.name_scope(name):
+        kernel_shape = [inp_shape[-1], num_output]
+        weights = tf_initializations.get_weights(weight_initializer, kernel_shape, name)
+        bias = tf_initializations.get_bias(bias_initializer, num_output, name)
+        assert any([isinstance(weights, object), isinstance(bias, object)]), 'weights or bias can not be None'
+        bias_add_op = tf.nn.xw_plus_b(inp, weights,bias,name='fc')
+    if activation_func:
+        bias_add_op = tf_activations.get(activation_func)(bias_add_op)
+    assert isinstance(bias_add_op, object)
+    if print_shape:
+        print "Layer type: {} shape: {}".format(name, tf_utils.get_inp_shape(bias_add_op))
+
+    if batch_norm_func:
+        assert "phase_train" in batch_norm_func, "phase train should be present in dict"
+        bias_add_op = batch_norm(bias_add_op, batch_norm_func["phase_train"], "batch_norm")
+    if dropout_func:
+        assert "keep_prob" in dropout_func, "keep_prob should be present in dict"
+        bias_add_op = dropout(bias_add_op, keep_prob=dropout_func["keep_prob"], name=name)
+
+    return bias_add_op

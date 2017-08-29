@@ -45,6 +45,18 @@ def dropout(inp, keep_prob,name):
         dropout = tf.nn.dropout(inp,keep_prob=keep_prob,name="dropout")
     return dropout
 
-def concat(axis,values,name="concat"):
+def concat(axis,values,name="concat",print_shape=True):
 
-    return tf.concat(axis=axis,values=values,name=name)
+    concat_value = tf.concat(axis=axis,values=values,name=name)
+    if print_shape:
+        print "Layer name: {} shape: {}".format(name,tf_utils.get_inp_shape(concat_value))
+    return concat_value
+
+def identity(inp):
+    return tf.identity(inp)
+
+def flatten(inp):
+    dims = inp.get_shape()[1:]
+    k = dims.num_elements()
+    with tf.name_scope("flatten"):
+        return tf.reshape(inp,[-1,k])

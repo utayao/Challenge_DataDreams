@@ -71,6 +71,7 @@ class TrainDataGenerator(Generator):
     def sample_batch(self, batch_size, cv, cancer_ratio=0.5, index=0):
         cancer_batch_size = int(cancer_ratio * batch_size)
         non_cancer_batch_size = batch_size - cancer_batch_size
+        print self.cancer_train_indices[cv][index]
         cv_cancer_images, cv_cancer_labels = self.cancer_images[self.cancer_train_indices[cv][index]], \
                                              self.cancer_labels[
                                                  self.cancer_train_indices[cv][index]]
