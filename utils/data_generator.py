@@ -50,6 +50,7 @@ class TrainDataGenerator(Generator):
                                                                          labels=True)
         self.non_cancer_images = self.read_images_to_arr(images=non_cancer_images_path, subset=subset, labels=False)
         self.cancer_train_indices, self.non_cancer_train_indices = None, None
+        print self.cancer_images.shape,self.non_cancer_images.shape
         if not os.path.exists("../phase_1/non_cancer_splits.txt") or not os.path.exists("../phase_1/cancer_splits.txt"):
             self._splits = KFold(n_splits=cv, shuffle=True)
             self.cancer_train_indices = [(train_index, test_index) for train_index, test_index in

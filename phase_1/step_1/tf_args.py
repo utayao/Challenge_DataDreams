@@ -11,7 +11,7 @@ EVAL_COUNT = 20
 IMAGES_MEAN_PATH = "../data"
 IMAGES_STD_PATH = "../data"
 # File I/O
-tf.app.flags.DEFINE_string("data_dir", "../data", "path where the data is located")
+tf.app.flags.DEFINE_string("data_dir", "/home/ashwin/Challenge_DataDreams/data", "path where the data is located")
 tf.app.flags.DEFINE_string("train_dir", "results", "path to store train model")
 
 # Model hyper parameters

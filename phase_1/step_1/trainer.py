@@ -180,7 +180,7 @@ class NetTrainer(object):
                     end = clock()
                     print("Saving the checkpoint")
                     print("SAVING with TRAINING:- Time:{} per sec, loss: {}, accuracy: {}, precision: {},Recall: {},f1: {}".format(
-                        (end - start), train_loss, acc[0], precision[0], recall,[0] f1[0]
+                        (end - start), train_loss, acc[0], precision[0], recall[0], f1[0]
                     ))
                     self.saver.save(sess, self._job_dir.join_path(ckpt_path, "weights-ckpt"),
                                     global_step=self.global_step)
