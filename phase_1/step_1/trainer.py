@@ -143,12 +143,10 @@ class NetTrainer(object):
             else:
                 sess.run(tf.global_variables_initializer())
                 sess.run(tf.local_variables_initializer())
-                #sess.run(tf.variables_initializer([tf.get_variable(name) for name in  sess.run(tf.report_uninitialized_variables())]))
 
             # Build Forward ops
             run_ops = ([self.train_op, self._net.summary_op, self._net.loss_op] +
                        list(self._net.evaluation_ops))
-            # print batch_size
             prev_train_loss = np.Inf
             for iter_idx in range(max_iter):
                 start = clock()
@@ -158,28 +156,31 @@ class NetTrainer(object):
                 # Display the values
                 if iter_idx and iter_idx % tf_args.DISPLAY_ITERS == 0:
                     end = clock()
-                    print("TRAINING:- Time:{} per sec, loss: {}, accuracy: {}, dice: {}".format(
-                        (end - start), train_loss, acc, precision
+                    print("TRAINING:- Time:{} per sec, loss: {}, accuracy: {}, precision: {},Recall: {},f1: {}".format(
+                        (end - start), train_loss, acc, precision, recall, f1
                     ))
                 if iter_idx and iter_idx % tf_args.EVAL_ITERS == 0:
-                    loss_arr = acc_arr = dice_arr = []
+                    loss_arr = acc_arr = precision_arr = recall_arr = f1_arr = []
                     for eval_start in range(tf_args.EVAL_COUNT):
-                        _, summary, eval_loss, eval_acc, eval_dice = sess.run(run_ops, feed_dict=self.feed_dict(
+                        _, summary, eval_loss, eval_acc, eval_precision, eval_recall, eval_f1 = sess.run(run_ops, feed_dict=self.feed_dict(
                             each_cross_validation,
                             train=False))
                         loss_arr.append(eval_loss)
                         acc_arr.append(eval_acc)
-                        dice_arr.append(eval_dice)
+                        precision_arr.append(eval_precision)
+                        recall_arr.append(eval_recall)
+                        f1_arr.append(eval_f1)
 
-                    print("EVALUATION:- loss: {}, acc: {}, dice: {} ".format(
-                        np.mean(loss_arr), np.mean(acc_arr), np.mean(dice_arr)
+
+                    print("EVALUATION:- loss: {}, acc: {}, precision: {}, recall: {}, f1: {} ".format(
+                        np.mean(loss_arr), np.mean(acc_arr), np.mean(precision_arr), np.mean(recall_arr), np.mean(f1_arr)
                     ))
                 if train_loss < prev_train_loss:
                     prev_train_loss = train_loss
                     end = clock()
                     print("Saving the checkpoint")
-                    print("SAVING with training stats:- Time:{} per sec, loss: {}, accuracy: {}, dice: {}".format(
-                        (end - start), train_loss, acc, dice
+                    print("SAVING with TRAINING:- Time:{} per sec, loss: {}, accuracy: {}, precision: {},Recall: {},f1: {}".format(
+                        (end - start), train_loss, acc, precision, recall, f1
                     ))
                     self.saver.save(sess, self._job_dir.join_path(ckpt_path, "weights-ckpt"),
                                     global_step=self.global_step)

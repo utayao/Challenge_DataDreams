@@ -2,10 +2,7 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="d82cc900-6ffc-460c-9072-c67b3239cc6b" name="Default" comment="">
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/phase_1/step_1/model.py" afterPath="$PROJECT_DIR$/phase_1/step_1/model.py" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/phase_1/step_1/trainer.py" afterPath="$PROJECT_DIR$/phase_1/step_1/trainer.py" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/utils/data_generator.py" afterPath="$PROJECT_DIR$/utils/data_generator.py" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/utils/utils.py" afterPath="$PROJECT_DIR$/utils/utils.py" />
     </list>
     <ignored path="Challenge_DataDreams.iws" />
     <ignored path=".idea/workspace.xml" />
@@ -37,11 +34,11 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="trainer.py" pinned="false" current-in-tab="false">
+      <file leaf-file-name="trainer.py" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/phase_1/step_1/trainer.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="1170">
-              <caret line="145" column="17" lean-forward="false" selection-start-line="145" selection-start-column="17" selection-end-line="145" selection-end-column="17" />
+            <state relative-caret-position="1519">
+              <caret line="181" column="39" lean-forward="false" selection-start-line="181" selection-start-column="39" selection-end-line="181" selection-end-column="39" />
               <folding />
             </state>
           </provider>
@@ -59,7 +56,7 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="model.py" pinned="false" current-in-tab="true">
+      <file leaf-file-name="model.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/phase_1/step_1/model.py">
           <provider selected="true" editor-type-id="text-editor">
             <state relative-caret-position="1065">
@@ -163,9 +160,9 @@
         <option value="$PROJECT_DIR$/architectures/inception_v3_slim.py" />
         <option value="$PROJECT_DIR$/phase_1/step_1/tf_args.py" />
         <option value="$PROJECT_DIR$/utils/utils.py" />
-        <option value="$PROJECT_DIR$/phase_1/step_1/trainer.py" />
         <option value="$PROJECT_DIR$/utils/data_generator.py" />
         <option value="$PROJECT_DIR$/phase_1/step_1/model.py" />
+        <option value="$PROJECT_DIR$/phase_1/step_1/trainer.py" />
       </list>
     </option>
   </component>
@@ -450,7 +447,7 @@
     <frame x="1984" y="-11" width="1017" height="1868" extended-state="6" />
     <editor active="true" />
     <layout>
-      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.1754386" sideWeight="0.5" order="0" side_tool="false" content_ui="combo" />
+      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.06707946" sideWeight="0.5" order="0" side_tool="false" content_ui="combo" />
       <window_info id="TODO" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="6" side_tool="false" content_ui="tabs" />
       <window_info id="Event Log" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="7" side_tool="true" content_ui="tabs" />
       <window_info id="Run" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
@@ -934,14 +931,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/phase_1/step_1/trainer.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="1170">
-          <caret line="145" column="17" lean-forward="false" selection-start-line="145" selection-start-column="17" selection-end-line="145" selection-end-column="17" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/utils/data_generator.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="961">
@@ -959,6 +948,14 @@
           <folding>
             <element signature="e#0#23#0" expanded="true" />
           </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/phase_1/step_1/trainer.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="1519">
+          <caret line="181" column="39" lean-forward="false" selection-start-line="181" selection-start-column="39" selection-end-line="181" selection-end-column="39" />
+          <folding />
         </state>
       </provider>
     </entry>
