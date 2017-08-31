@@ -1,5 +1,4 @@
 import sys
-
 from step_1 import tf_args
 
 sys.path.append("../")
@@ -142,7 +141,7 @@ class NetTrainer(object):
                 print 'weights restored'
             else:
                 sess.run(tf.global_variables_initializer())
-                sess.run(tf.local_variables_initializer())
+            sess.run(tf.local_variables_initializer())
 
             # Build Forward ops
             run_ops = ([self.train_op, self._net.summary_op, self._net.loss_op] +
@@ -166,10 +165,10 @@ class NetTrainer(object):
                             each_cross_validation,
                             train=False))
                         loss_arr.append(eval_loss)
-                        acc_arr.append(eval_acc)
-                        precision_arr.append(eval_precision)
-                        recall_arr.append(eval_recall)
-                        f1_arr.append(eval_f1)
+                        acc_arr.append(eval_acc[0])
+                        precision_arr.append(eval_precision[0])
+                        recall_arr.append(eval_recall[0])
+                        f1_arr.append(eval_f1[0])
 
 
                     print("EVALUATION:- loss: {}, acc: {}, precision: {}, recall: {}, f1: {} ".format(
