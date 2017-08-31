@@ -8,8 +8,12 @@ DISPLAY_ITERS = 10
 EVAL_ITERS = 100
 SAVE_ITERS = 150
 EVAL_COUNT = 20
+BATCHNORM_MOVING_AVERAGE_DECAY = 0.9997
+MOVING_AVERAGE_DECAY = 0.9999
 IMAGES_MEAN_PATH = "../data"
 IMAGES_STD_PATH = "../data"
+TOWER_NAME = 'tower'
+
 # File I/O
 tf.app.flags.DEFINE_string("data_dir", "/home/ashwin/Challenge_DataDreams/data", "path where the data is located")
 tf.app.flags.DEFINE_string("train_dir", "results", "path to store train model")

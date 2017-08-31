@@ -37,5 +37,11 @@ def normalize(img,between=[-1,1]):
     a,b = between
     return ((b-a)* (img - np.min(img))/(np.max(img) - np.min(img))) + a
 
+def tensor_eval(img):
+    with tf.Session() as sess:
+        with sess.as_default():
+            img = img.eval()
+    return img
+
 def global_funcs(func):
     return globals()[func]

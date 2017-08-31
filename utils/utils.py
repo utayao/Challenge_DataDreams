@@ -5,12 +5,15 @@ import numpy as np
 from sklearn.feature_extraction import image as sklearn_image
 import pickle
 import matplotlib as mpl
+
 mpl.use('Agg')
 import matplotlib.pyplot as plt
+
 plt.ioff()
 from scipy import misc
 from scipy import ndimage
 import traceback
+
 
 def flood_fill(label):
     th, im_th = cv2.threshold(label, 0, 127, cv2.THRESH_BINARY_INV)
@@ -53,16 +56,16 @@ def makedir(path):
         os.makedirs(path)
 
 
-
-
 def save_obj(obj, obj_path):
     makedir(os.path.dirname(obj_path))
     with open(obj_path, "wb") as f:
         pickle.dump(obj, f)
 
+
 def display(img):
     plt.imshow(img, cmap="Greys")
     plt.show()
+
 
 def load_obj(obj_path):
     with open(obj_path, "rb") as f:
@@ -70,28 +73,28 @@ def load_obj(obj_path):
 
 
 def one_hot_vector(labels):
-    labels = np.array(labels,dtype=np.int)
-    res = np.zeros((labels.size,int(labels.max())+1),dtype=np.int64)
-    res[np.arange(labels.size),labels] = 1
+    labels = np.array(labels, dtype=np.int)
+    res = np.zeros((labels.size, int(labels.max()) + 1), dtype=np.int64)
+    res[np.arange(labels.size), labels] = 1
     return res
 
 
 def extract_patches_2d(image, bounding_box, label, patch_size=(224, 224), max_patches=1):
     x, y, w, h = bounding_box
-    #print bounding_box
+    # print bounding_box
     rand_x, rand_y, w, h = np.random.randint(low=x, high=x + w, size=1)[0], \
                            np.random.randint(low=y, high=y + h, size=1)[0], patch_size[0], patch_size[1]
     if (rand_y + h > image.shape[1]):
         rand_y -= (rand_y + h - image.shape[1])
     if (rand_x + w > image.shape[0]):
         rand_x -= (rand_x + w - image.shape[0])
-    
+
     label_image = label[rand_y:rand_y + h, rand_x:rand_x + w]
     intersection = np.count_nonzero(label_image) * 1.0 / (
-    np.count_nonzero(label_image) + len(np.where(label_image == 0)))
+        np.count_nonzero(label_image) + len(np.where(label_image == 0)))
     # return label_image,intersection
-    #print bounding_box
-    #print rand_y, rand_x ,h, w 
+    # print bounding_box
+    # print rand_y, rand_x ,h, w
     return image[rand_y:rand_y + h, rand_x:rand_x + w, :], intersection
 
 
@@ -105,8 +108,8 @@ def extract_random_patch_from_contour(image, label, patch_size, max_patches, can
         index = np.random.randint(0, len(bounding_boxes))
         bounding_box_image = bounding_boxes[index]
         x, y, w, h = bounding_box_image
-        #image_bounding_box = image[y:y + h, x:x + w, :]
-        #display(label)
+        # image_bounding_box = image[y:y + h, x:x + w, :]
+        # display(label)
         img, intersection = extract_patches_2d(image, bounding_box_image, label, patch_size=patch_size,
                                                max_patches=1)
         if intersection > cancer_ratio:
