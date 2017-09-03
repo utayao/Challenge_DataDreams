@@ -6,15 +6,11 @@ from architectures.slim import slim
 
 
 class Model(object):
-    def __init__(self, net, image_size, n_classes):
-        self._net = net
+    def __init__(self, image_size, n_classes):
         self._image_size = image_size
         self._n_class = n_classes
 
     def build_infer_op(self, train, restore_logits):
-        with tf.name_scope("inference"):
-            self.acc_op = tf.nn.softmax(self.logits)
-        return self.acc_op
         batch_norm_params = {
             'decay': tf_args.BATCHNORM_MOVING_AVERAGE_DECAY,
             'epsilon': 0.001,
@@ -29,41 +25,39 @@ class Model(object):
                     dropout_keep_prob=0.8,
                     num_classes=self._n_class,
                     is_training=train,
-                    restore_logits=restore_logits,
-                    scope=scope
+                    restore_logits=restore_logits
                 )
-        self.build_summary_op(end_points)
         auxiliary_logits = end_points['aux_logits']
-        return logits, auxiliary_logits, end_points['predictions']
+        return logits, auxiliary_logits, end_points, end_points['predictions']
 
-    def build_loss_op(self, logits_op, label_op, batch_size):
+    def build_loss_op(self, logits_op,aux_logits, label_op, batch_size):
 
-        sparse_labels = tf.reshape(label_op, [-1, 1])
-        indices = tf.reshape(tf.range(batch_size), [batch_size, 1])
-        concated = tf.concat([indices, sparse_labels], 1)
-        num_classes = logits_op[0].get_shape()[-1].value
-        dense_labels = tf.sparse_to_dense(concated,
-                                          [batch_size, num_classes],
-                                          1.0, 0.0)
-        slim.losses.cross_entropy_loss(logits_op[0],
-                                       dense_labels,
+        # sparse_labels = tf.reshape(label_op, [-1, 1])
+        # indices = tf.reshape(tf.range(batch_size), [batch_size, 1])
+        # concated = tf.concat([indices, sparse_labels], 1)
+        # num_classes = logits_op.get_shape()[-1].value
+        # dense_labels = tf.sparse_to_dense(concated,
+        #                                   [batch_size, num_classes],
+        #                                   1.0, 0.0)
+        slim.losses.cross_entropy_loss(logits_op,
+                                       label_op,
                                        label_smoothing=0.1,
                                        weight=1.0)
-        slim.losses.cross_entropy_loss(logits_op[1],
-                                       dense_labels,
+        slim.losses.cross_entropy_loss(aux_logits,
+                                       label_op,
                                        label_smoothing=0.1,
                                        weight=0.4,
                                        scope='aux_loss')
 
-        losses = tf.get_collection(slim.losses.LOSSES_COLLECTION, scope)
+        losses = tf.get_collection(slim.losses.LOSSES_COLLECTION)
         regularization_losses = tf.get_collection(tf.GraphKeys.REGULARIZATION_LOSSES)
         total_loss = tf.add_n(losses + regularization_losses, name="total_loss")
         loss_averages = tf.train.ExponentialMovingAverage(0.9, name="avg")
         loss_averages_op = loss_averages.apply(losses + [total_loss])
         for l in losses + [total_loss]:
-            loss_name = re.sub('%s_[0-9]*/'%tf_args.TOWER_NAME,'',l.op.name)
-            tf.summary.scalar(loss_name+' (Raw)', l)
-            tf.summary.scalar(loss_name,loss_averages.average(l))
+            loss_name = re.sub('%s_[0-9]*/' % tf_args.TOWER_NAME, '', l.op.name)
+            tf.summary.scalar(loss_name + ' (Raw)', l)
+            tf.summary.scalar(loss_name, loss_averages.average(l))
         with tf.control_dependencies([loss_averages_op]):
             total_loss = tf.identity(total_loss)
         return total_loss
@@ -76,7 +70,7 @@ class Model(object):
                 shape=[None, self._image_size[0], self._image_size[1], 3]
             )
             self.label_op = tf.placeholder(
-                tf.int64,
+                tf.int32,
                 shape=[None, self._n_class]
             )
             self.phase_train = tf.placeholder(tf.bool, name="phase_train")
@@ -93,16 +87,14 @@ class Model(object):
     def build(self, train=True, batch_size=32):
         self.build_input_op(train)
 
-        self.logits, auxiliary_logits, endpoints = self.build_infer_op(train, True)
-
-        self.acc, self.precision, self.recall, self.f1 = self.build_evaluation_op(endpoints['predictions'], self.label_op)
+        self.logits, auxiliary_logits, endpoints, self.acc_op = self.build_infer_op(train, True)
+        print self.logits.get_shape()
+        self.acc, self.precision, self.recall, self.f1 = self.build_evaluation_op(endpoints['predictions'],
+                                                                                  self.label_op)
         if train:
-            self.build_loss_op(self.logits, self.label_op, batch_size)
-            self.loss = self.tower_loss(self.data_op,self.label_op,self._n_class,scope,reuse_variables=None)
-            self.summary = self.build_summary_op(endpoints)
-    def tower_loss(self,images,labels,n_class,scope,reuse_variables=True):
-        with tf.variable_scope(tf.get_variable_scope(), reuse=reuse_variables):
-            logits =
+            self.loss = self.build_loss_op(self.logits, auxiliary_logits, self.label_op, batch_size)
+            self.build_summary_op(endpoints)
+
     @staticmethod
     def _activation_summary(x):
         tensor_name = re.sub('%s_[0-9]*/' % tf_args.TOWER_NAME, '', x.op.name)
@@ -121,9 +113,9 @@ class Model(object):
             tf.summary.scalar("recall", recall[0])
             tf.summary.scalar("f1", f1[0])
 
-            merged = tf.summary.merge_all()
+            # merged = tf.summary.merge_all()
 
-        return merged
+            # return merged
 
     @property
     def input_ops(self):

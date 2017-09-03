@@ -82,24 +82,20 @@ class TrainDataGenerator(Generator):
         cv_non_cancer_images = self.non_cancer_images[self.non_cancer_train_indices[cv][index]]
 
         # pdb.set_trace()
-        self.cancer_image_index = self.cancer_train_indices[cv][index][self.cancer_image_counter]
-        self.non_cancer_image_index = self.non_cancer_train_indices[cv][index][self.non_cancer_image_counter]
-        # print self.cancer_image_counter
-        # print self.non_cancer_image_counter
-        # print self.cancer_image_index
-        # print self.non_cancer_image_index
+        #print self.cancer_image_index
+        #print self.non_cancer_image_index
 
         cancer_images, cancer_labels, self.cancer_image_counter = utils.extract_patches(images=cv_cancer_images,
                                                                                         labels=cv_cancer_labels,
                                                                                         max_patch=cancer_batch_size,
                                                                                         patch_size=self._image_resize,
-                                                                                        index=self.cancer_image_index,
                                                                                         counter=self.cancer_image_counter)
         non_cancer_images, non_cancer_labels, self.non_cancer_image_counter = utils.extract_patches(
             images=cv_non_cancer_images, labels=None,
             max_patch=non_cancer_batch_size, patch_size=self._image_resize,
-            index=self.non_cancer_image_index,
             counter=self.non_cancer_image_counter)
+        self.cancer_image_counter %= len(self.cancer_train_indices[cv][index])
+        self.non_cancer_image_counter %= len(self.non_cancer_train_indices[cv][index])
 
         if self._cancer_data_augmentation:
             for index in range(len(cancer_images)):
@@ -128,4 +124,5 @@ class TrainDataGenerator(Generator):
                 images[i] = utils.normalize(img, between=[-1, 1])
         # labels = utils.one_hot_vector(labels)
         # print labels
+
         return images, utils.one_hot_vector(labels)

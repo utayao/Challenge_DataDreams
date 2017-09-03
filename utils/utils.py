@@ -5,6 +5,7 @@ import numpy as np
 from sklearn.feature_extraction import image as sklearn_image
 import pickle
 import matplotlib as mpl
+from functools import partial
 
 mpl.use('Agg')
 import matplotlib.pyplot as plt
@@ -13,6 +14,23 @@ plt.ioff()
 from scipy import misc
 from scipy import ndimage
 import traceback
+
+logging_instance = {}
+def logger_func(path):
+    global logging_instance
+    instance = logging_instance.get(path)
+    if not instance:
+        import logging
+        logger = logging.getLogger('log_file')
+        hdlr = logging.FileHandler(path)
+        formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
+        hdlr.setFormatter(formatter)
+        logger.addHandler(hdlr)
+        logger.setLevel(logging.INFO)
+        logging_instance[path] = logger
+        return logger
+    else:
+        return instance
 
 
 def flood_fill(label):
@@ -72,6 +90,10 @@ def load_obj(obj_path):
         return pickle.load(f)
 
 
+def log_to_file(path, txt):
+    logger = logger_func(path)
+    logger.info(txt)
+
 def one_hot_vector(labels):
     labels = np.array(labels, dtype=np.int)
     res = np.zeros((labels.size, int(labels.max()) + 1), dtype=np.int64)
@@ -122,15 +144,15 @@ def extract_random_patch_from_contour(image, label, patch_size, max_patches, can
         traceback.print_exc()
 
 
-def extract_patches(images, labels=None, max_patch=1, patch_size=(224, 224), index=0, counter=0, **kwargs):
+def extract_patches(images, labels=None, max_patch=1, patch_size=(224, 224), counter=0, **kwargs):
     if labels is not None:
         cancer_ratio = kwargs.get("cancer_ratio", 0.75)
-        images = extract_random_patch_from_contour(images[index], labels[index], patch_size=patch_size,
+        images = extract_random_patch_from_contour(images[counter], labels[counter], patch_size=patch_size,
                                                    max_patches=max_patch,
                                                    cancer_ratio=cancer_ratio)
         labels = np.ones_like(np.arange(max_patch, dtype=np.float))
     else:
-        images = sklearn_image.extract_patches_2d(images[index], patch_size=patch_size,
+        images = sklearn_image.extract_patches_2d(images[counter], patch_size=patch_size,
                                                   max_patches=max_patch)
         labels = np.zeros_like(np.arange(max_patch, dtype=np.float))
-    return images, labels, (counter + 1) % len(images)
+    return images, labels, (counter + 1)
