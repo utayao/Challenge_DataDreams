@@ -16,11 +16,17 @@ def main(argv=None):
         sess = None
 
     cancer_data_augmentation = {
+        'rotate_image': {'angle':[1,5]},
+        'flipud': True,
+        'fliplr': True,
+        'adjust_brightness': True,
+        'adjust_hue':True,
+        'adjust_saturation':True
+
 
     }
-    non_cancer_data_augmentation = {
+    non_cancer_data_augmentation = cancer_data_augmentation.copy()
 
-    }
     gfile.MakeDirs(FLAGS.train_dir)
     trainer = NetTrainer(FLAGS.data_dir, FLAGS.train_dir, cancer_data_augmentation=cancer_data_augmentation,
                           non_cancer_data_augmentation=non_cancer_data_augmentation, cv=FLAGS.cv,

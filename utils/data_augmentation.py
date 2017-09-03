@@ -30,7 +30,7 @@ def adjust_hue(img, kwargs):
     return tf.image.adjust_hue(img, 0.04)
 
 
-def adjust_staturation(img, kwargs):
+def adjust_saturation(img, kwargs):
     return tf.image.adjust_saturation(img, 0.25)
 
 def normalize(img,between=[-1,1]):
