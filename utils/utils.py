@@ -7,6 +7,7 @@ import pickle
 import matplotlib as mpl
 from functools import partial
 import json
+
 mpl.use('Agg')
 import matplotlib.pyplot as plt
 
@@ -16,6 +17,8 @@ from scipy import ndimage
 import traceback
 
 logging_instance = {}
+
+
 def logger_func(path):
     global logging_instance
     instance = logging_instance.get(path)
@@ -94,17 +97,20 @@ def log_to_file(path, txt):
     logger = logger_func(path)
     logger.info(txt)
 
+
 def get_json(path):
-    assert os.path.exists(path),"No such file exist"
+    assert os.path.exists(path), "No such file exist"
     with open(path) as data_file:
         data = json.loads(data_file.read())
     return data
 
-def get_state(path,key):
-    data = get_json(path)
-    return data.get(key,None)
 
-def save_json(path,key,value,Type="scalar"):
+def get_state(path, key):
+    data = get_json(path)
+    return data.get(key, None)
+
+
+def save_json(path, key, value, Type="scalar"):
     data = get_json(path)
     if Type.lower() == "list":
         if key not in data:
@@ -112,14 +118,24 @@ def save_json(path,key,value,Type="scalar"):
         data[key].append(str(value))
     else:
         data[key] = str(value)
-    with open(path,"w") as data_file:
-        json.dump(data,data_file)
+    with open(path, "w") as data_file:
+        json.dump(data, data_file)
+
+
+def save_image(img_arr, path):
+    misc.imsave(path, img_arr)
+
 
 def one_hot_vector(labels):
     labels = np.array(labels, dtype=np.int)
     res = np.zeros((labels.size, int(labels.max()) + 1), dtype=np.int64)
     res[np.arange(labels.size), labels] = 1
     return res
+
+
+def save_array_of_images(images_arr, data_path, counter, label):
+    for i in range(images_arr.shape[0]):
+        save_image(images_arr[i, :], os.path.join(data_path, str(counter)+'_'+str(i) + '_' + str(label) + '.jpg'))
 
 
 def extract_patches_2d(image, bounding_box, label, patch_size=(224, 224), max_patches=1):

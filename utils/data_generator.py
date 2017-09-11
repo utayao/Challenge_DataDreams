@@ -4,6 +4,7 @@ import glob
 import numpy as np
 import sklearn
 import random
+from sklearn.feature_extraction import image as sklearn_image
 from sklearn.model_selection import KFold
 from data_augmentation import global_funcs, tensor_eval
 import utils
@@ -45,6 +46,7 @@ class TrainDataGenerator(Generator):
         self._shuffle = shuffle
         self._subset = subset
         self._normalize = normalize
+        self._cv = cv
         non_cancer_images_path = glob.glob(os.path.join(cancer_image_path, "non_cancer_subset00/*.tiff"))
         cancer_images_path = glob.glob(os.path.join(cancer_image_path, "cancer_subset0[0-8]/*.tiff"))
         random.shuffle(cancer_images_path)
@@ -56,34 +58,58 @@ class TrainDataGenerator(Generator):
         self.non_cancer_images = self.read_images_to_arr(images=non_cancer_images_path, subset=subset, labels=False)
         self.cancer_train_indices, self.non_cancer_train_indices = None, None
         print self.cancer_images.shape, self.non_cancer_images.shape
-        if not os.path.exists("../phase_1/non_cancer_splits.txt") or not os.path.exists("../phase_1/cancer_splits.txt"):
-            self._splits = KFold(n_splits=cv, shuffle=True)
-            self.cancer_train_indices = [(train_index, test_index) for train_index, test_index in
-                                         self._splits.split(self.cancer_images)]
-            self.non_cancer_train_indices = [(train_index, test_index) for train_index, test_index in
-                                             self._splits.split(self.non_cancer_images)]
+        if cv:
+            if not os.path.exists("../phase_1/non_cancer_splits.txt") or not os.path.exists(
+                    "../phase_1/cancer_splits.txt"):
+                self._splits = KFold(n_splits=cv, shuffle=True)
+                self.cancer_train_indices = [(train_index, test_index) for train_index, test_index in
+                                             self._splits.split(self.cancer_images)]
+                self.non_cancer_train_indices = [(train_index, test_index) for train_index, test_index in
+                                                 self._splits.split(self.non_cancer_images)]
 
-            utils.save_obj(self.cancer_train_indices, "../phase_1/cancer_splits.txt")
-            utils.save_obj(self.non_cancer_train_indices, "../phase_1/non_cancer_splits.txt")
+                utils.save_obj(self.cancer_train_indices, "../phase_1/cancer_splits.txt")
+                utils.save_obj(self.non_cancer_train_indices, "../phase_1/non_cancer_splits.txt")
 
-        else:
-            print "cross validation already available"
-            self.cancer_train_indices = utils.load_obj("../phase_1/cancer_splits.txt")
-            self.non_cancer_train_indices = utils.load_obj("../phase_1/non_cancer_splits.txt")
-        assert self.cancer_train_indices or self.non_cancer_train_indices, " list can not be empty"
-        print 'length of cancer indicies: {}, length of non cancer indicies: {}'.format(len(self.cancer_train_indices),len(self.non_cancer_train_indices))
-        print 'Number of cancer indices train in each cv {}'.format([len(i[0]) for i in self.cancer_train_indices])
-        print 'Number of  cancer indices test in each cv {}'.format([len(i[1]) for i in self.cancer_train_indices])
-        print 'Number of non cancer indices train in each cv {}'.format([len(i[0]) for i in self.non_cancer_train_indices])
-        print 'Number of non cancer indices in each cv {}'.format([len(i[1]) for i in self.non_cancer_train_indices])
+            else:
+                print "cross validation already available"
+                self.cancer_train_indices = utils.load_obj("../phase_1/cancer_splits.txt")
+                self.non_cancer_train_indices = utils.load_obj("../phase_1/non_cancer_splits.txt")
+            assert self.cancer_train_indices or self.non_cancer_train_indices, " list can not be empty"
+            print 'length of cancer indicies: {}, length of non cancer indicies: {}'.format(
+                len(self.cancer_train_indices),
+                len(
+                    self.non_cancer_train_indices))
+            print 'Number of cancer indices train in each cv {}'.format([len(i[0]) for i in self.cancer_train_indices])
+            print 'Number of  cancer indices test in each cv {}'.format([len(i[1]) for i in self.cancer_train_indices])
+            print 'Number of non cancer indices train in each cv {}'.format(
+                [len(i[0]) for i in self.non_cancer_train_indices])
+            print 'Number of non cancer indices in each cv {}'.format(
+                [len(i[1]) for i in self.non_cancer_train_indices])
 
+        self.cancer_image_counter = [0, 0]
+        self.non_cancer_image_counter = [0, 0]
 
+    def extract_patches(self, number_of_each_cancer_images=0, number_of_each_non_cancer_images=0, save_path=None):
+        from tqdm import tqdm
+        assert number_of_each_cancer_images == 0 or number_of_each_non_cancer_images == 0, 'number of cancer and non cancer images should not be zero'
+        assert self._cv is None, "cv should be None"
+        utils.makedir(save_path)
+        for index in tqdm(range(self.cancer_images.shape[0])):
+            cancer_patches = utils.extract_random_patch_from_contour(image=self.cancer_images[index, :],
+                                                                     label=self.cancer_labels[index, :],
+                                                                     patch_size=self._image_resize,
+                                                                     max_patches=number_of_each_cancer_images,
+                                                                     cancer_ratio=0.9)
 
+            utils.save_array_of_images(cancer_patches, save_path, counter=index, label=1)
+            del cancer_patches
+        for index in tqdm(range(self.non_cancer_images.shape[0])):
+            non_cancer_patches = sklearn_image.extract_patches_2d(self.non_cancer_images[index, :],
+                                                                  patch_size=self._image_resize,
+                                                                  max_patches=number_of_each_non_cancer_images)
+            utils.save_array_of_images(non_cancer_patches, save_path, counter=index, label=0)
+        del non_cancer_patches
 
-        self.cancer_image_counter = [0,0]
-        self.non_cancer_image_counter = [0,0]
-        
-        
     def sample_batch(self, batch_size, cv, cancer_ratio=0.5, index=0):
         if index == 1:
             print "index is 1"
@@ -94,18 +120,20 @@ class TrainDataGenerator(Generator):
                                                  self.cancer_train_indices[cv][index]]
         cv_non_cancer_images = self.non_cancer_images[self.non_cancer_train_indices[cv][index]]
 
-        cv_cancer_images,cv_cancer_labels = sklearn.utils.shuffle(cv_cancer_images, cv_cancer_labels)
+        cv_cancer_images, cv_cancer_labels = sklearn.utils.shuffle(cv_cancer_images, cv_cancer_labels)
         cv_non_cancer_images = sklearn.utils.shuffle(cv_non_cancer_images)
         # pdb.set_trace()
-        print "cancer counter ",self.cancer_image_counter
-        
-        print "non cancer counter ",self.non_cancer_image_counter
+        print "cancer counter ", self.cancer_image_counter
+
+        print "non cancer counter ", self.non_cancer_image_counter
 
         cancer_images, cancer_labels, self.cancer_image_counter[index] = utils.extract_patches(images=cv_cancer_images,
-                                                                                        labels=cv_cancer_labels,
-                                                                                        max_patch=cancer_batch_size,
-                                                                                        patch_size=self._image_resize,
-                                                                                        counter=self.cancer_image_counter[index])
+                                                                                               labels=cv_cancer_labels,
+                                                                                               max_patch=cancer_batch_size,
+                                                                                               patch_size=self._image_resize,
+                                                                                               counter=
+                                                                                               self.cancer_image_counter[
+                                                                                                   index])
         non_cancer_images, non_cancer_labels, self.non_cancer_image_counter[index] = utils.extract_patches(
             images=cv_non_cancer_images, labels=None,
             max_patch=non_cancer_batch_size, patch_size=self._image_resize,
