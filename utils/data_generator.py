@@ -91,10 +91,10 @@ class TrainDataGenerator(Generator):
 
     def extract_patches(self, number_of_each_cancer_images=0, number_of_each_non_cancer_images=0, save_path=None):
         from tqdm import tqdm
-        assert number_of_each_cancer_images == 0 or number_of_each_non_cancer_images == 0, 'number of cancer and non cancer images should not be zero'
         assert self._cv is None, "cv should be None"
         utils.makedir(save_path)
         for index in tqdm(range(self.cancer_images.shape[0])):
+            utils.display(self.cancer_images[index,:])
             cancer_patches = utils.extract_random_patch_from_contour(image=self.cancer_images[index, :],
                                                                      label=self.cancer_labels[index, :],
                                                                      patch_size=self._image_resize,

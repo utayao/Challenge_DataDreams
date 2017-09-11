@@ -12,7 +12,7 @@ def main(argv=None):
         shuffle=True,
         cv=None,
         image_resize=(224, 224),
-        subset=False,
+        subset=True,
         normalize=False
     )
 

@@ -84,7 +84,7 @@ def save_obj(obj, obj_path):
 
 
 def display(img):
-    plt.imshow(img, cmap="Greys")
+    misc.imshow(img)
     plt.show()
 
 
@@ -148,11 +148,11 @@ def extract_patches_2d(image, bounding_box, label, patch_size=(224, 224), max_pa
         rand_x -= (rand_x + w - image.shape[0])
 
     label_image = label[rand_y:rand_y + h, rand_x:rand_x + w]
-    intersection = np.count_nonzero(label_image) * 1.0 / (
-        np.count_nonzero(label_image) + len(np.where(label_image == 0)))
+    intersection = np.count_nonzero(label_image) * 1.0 /(patch_size[0]*patch_size[1])
     # return label_image,intersection
     # print bounding_box
     # print rand_y, rand_x ,h, w
+    #cv2.rectangle(label,(rand_x,rand_y),(rand_x+w,rand_y+h),(255,0,0),2)
     return image[rand_y:rand_y + h, rand_x:rand_x + w, :], intersection
 
 
