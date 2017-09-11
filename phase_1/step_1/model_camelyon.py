@@ -76,11 +76,63 @@ class Model(object):
             self.phase_train = tf.placeholder(tf.bool, name="phase_train")
 
     def build_evaluation_op(self, prob_op, label_op):
+        print prob_op.get_shape(),label_op.get_shape()
+        predictions = tf.argmax(prob_op,1)
+        actuals = tf.argmax(label_op,1)
+        #ones_like_actuals = tf.ones(actuals)
+        #zeros_like_actuals = tf.zeros_like(actuals)
+        #ones_like_predictions = tf.ones_like(predictions)
+        #zeros_like_predictions = tf.zeros_like(predictions)
+
         with tf.name_scope("evaluation"):
-            recall = tf.metrics.recall(label_op, prob_op)
-            precision = tf.metrics.precision(label_op, prob_op)
-            f1 = tf.multiply(2.0, tf.divide(tf.multiply(recall, precision), tf.add(recall, precision)))
-            accuracy = tf.metrics.accuracy(label_op, prob_op)
+#            tp_op = tf.reduce_sum(
+#                    tf.cast(
+#                        tf.logical_and(
+#                            tf.equal(actuals,ones_like_actuals),
+#                            tf.equal(predictions,ones_like_predictions)
+#                            ),
+#                        "float"
+#                        )
+#                    )
+#            tn_op = tf.reduce_sum(
+#                    tf.cast(
+#                        tf.logical_and(
+#                            tf.equal(actuals,zeros_like_actuals),
+#                            tf.equal(predictions,zeros_like_predictions)
+#                            ),
+#                        "float"
+#                        )
+#                    )
+#            fp_op = tf.reduce_sum(
+#                    tf.cast(
+#                        tf.logical_and(
+#                            tf.equal(actuals,zeros_like_actuals),
+#                            tf.equal(predictions,ones_like_predictions)
+#                            ),
+#                        "float"
+#                        )
+#                    )
+#            fn_op = tf.reduce_sum(
+#                    tf.cast(
+#                        tf.logical_and(
+#                            tf.equal(actuals,ones_like_actuals),
+#                            tf.equal(predictions,zeros_like_predictions)
+#                            ),
+#                        "float"
+#                        )
+#                    )
+#            
+            tp_op = tf.count_nonzero(predictions * actuals)
+            tn_op = tf.count_nonzero((predictions-1) * (actuals -1))
+            fn_op = tf.count_nonzero(actuals * (predictions - 1))
+            fp_op = tf.count_nonzero(predictions * (actuals - 1))
+
+            recall = tf.divide(tp_op,tf.add(tp_op,fn_op))
+            precision = tf.divide(tp_op,tf.add(tp_op,fp_op))
+           #accuracy = tf.divide(tf.add(tp_op, tn_op), tf.add(tf.add(tn_op,fp_op),tf.add(fn_op,tp_op)))
+           #f1 = tf.multiply(2.0, tf.divide(tf.multiply(recall, precision), tf.add(recall, precision)))
+            f1 = (2*precision * recall)/ (precision + recall)
+            accuracy = tf.reduce_mean(tf.to_float(tf.equal(predictions,actuals)))
 
         return accuracy, precision, recall, f1
 
@@ -88,9 +140,8 @@ class Model(object):
         self.build_input_op(train)
 
         self.logits, auxiliary_logits, endpoints, self.acc_op = self.build_infer_op(train, True)
-        print self.logits.get_shape()
         self.acc, self.precision, self.recall, self.f1 = self.build_evaluation_op(endpoints['predictions'],
-                                                                                  self.label_op)
+                                                                                 self.label_op)
         if train:
             self.loss = self.build_loss_op(self.logits, auxiliary_logits, self.label_op, batch_size)
             self.build_summary_op(endpoints)
@@ -108,14 +159,14 @@ class Model(object):
                 self._activation_summary(act)
             tf.summary.scalar("loss", self.loss_op)
             acc_op, precision, recall, f1 = self.evaluation_ops
-            tf.summary.scalar("accuracy", acc_op[0])
-            tf.summary.scalar("precision", precision[0])
-            tf.summary.scalar("recall", recall[0])
-            tf.summary.scalar("f1", f1[0])
+            tf.summary.scalar("accuracy", acc_op)
+            tf.summary.scalar("precision", precision)
+            tf.summary.scalar("recall", recall)
+            tf.summary.scalar("f1", f1)
 
-            # merged = tf.summary.merge_all()
+            merged = tf.summary.merge_all()
 
-            # return merged
+            return merged
 
     @property
     def input_ops(self):

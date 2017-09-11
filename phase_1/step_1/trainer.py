@@ -3,6 +3,7 @@ from step_1 import tf_args
 
 sys.path.append("../")
 import math
+import pdb
 import tensorflow as tf
 from utils.data_generator import TrainDataGenerator
 import numpy as np
@@ -12,7 +13,7 @@ FLAGS = tf.app.flags.FLAGS
 
 from utils.data import JobDir
 from time import clock
-from utils.utils import log_to_file
+from utils.utils import log_to_file,get_state,save_json
 
 class NetTrainer(object):
     def __init__(self,  data_dir, train_dir, cancer_data_augmentation=None, non_cancer_data_augmentation=None,
@@ -43,7 +44,7 @@ class NetTrainer(object):
         self.global_step = tf.Variable(0, trainable=False)
         self.build_train_op(
             self._net.loss,
-            optimizer=tf.train.RMSPropOptimizer(FLAGS.learning_rate, decay=0.9, momentum=0.9, epsilon=1.0),
+            optimizer=tf.train.AdamOptimizer(FLAGS.learning_rate),
             global_step=self.global_step
         )
         self.saver = tf.train.Saver(tf.global_variables(), max_to_keep=1)
@@ -85,6 +86,7 @@ class NetTrainer(object):
                 gradient_maps, global_step=global_step
             )
         self.train_op = train_op
+        self.optimizer = optimizer
 
     def batch_data(self, cv, train):
         """ produce a batch of training data """
@@ -169,47 +171,68 @@ class NetTrainer(object):
             else:
                 sess.run(tf.global_variables_initializer())
             sess.run(tf.local_variables_initializer())
-
+            print "sssssss"
             # Build Forward ops
-            run_ops = ([self.train_op, self.summary_op, self._net.loss_op] +
+            run_ops = ([self.train_op, self._net.loss_op, self.summary_op] +
                        list(self._net.evaluation_ops))
-            prev_train_loss = np.Inf
+            eval_ops = run_ops[1:]
+            prev_train_loss = float(get_state(FLAGS.state_file,"prev_train_loss"))
+            #self.feed_dict(each_cross_validation)        
             for iter_idx in range(max_iter):
                 start = clock()
-                _, summary, train_loss, acc, precision, recall, f1 = sess.run(run_ops,
-                                                                              feed_dict=self.feed_dict(
-                                                                                  each_cross_validation))
+#                lr = sess.run(self.optimizer._lr)
+
+                _, train_loss, summary, acc, precision, recall, f1 = sess.run(run_ops,feed_dict=self.feed_dict(each_cross_validation))
+                end = clock()
+                print "TRAINING:- Time:{} per sec, loss: {}, accuracy: {}, precision: {},Recall: {},f1: {}".format(
+                        (end - start), train_loss, acc, precision, recall, f1
+                    )
+
                 train_writer.add_summary(summary, self.global_step.eval(session=sess))
                 # Display the values
+                save_json(FLAGS.state_file,"train_loss",train_loss,Type="list")
+                save_json(FLAGS.state_file,"train_acc",acc,Type="list")
+ 
                 if iter_idx and iter_idx % tf_args.DISPLAY_ITERS == 0:
                     end = clock()
                     log_to_file("log.txt","TRAINING:- Time:{} per sec, loss: {}, accuracy: {}, precision: {},Recall: {},f1: {}".format(
-                        (end - start), train_loss, acc[0], precision[0], recall[0], f1[0]
+                        (end - start), train_loss, acc, precision, recall, f1
                     ))
                 if iter_idx and iter_idx % tf_args.EVAL_ITERS == 0:
-                    loss_arr = acc_arr = precision_arr = recall_arr = f1_arr = []
+                    loss_arr = []
+                    acc_arr = []
+                    precision_arr = []
+                    recall_arr = []
+                    f1_arr = []
                     for eval_start in range(tf_args.EVAL_COUNT):
-                        _, summary, eval_loss, eval_acc, eval_precision, eval_recall, eval_f1 = sess.run(run_ops,
+
+                        
+                        eval_loss, summary, eval_acc, eval_precision, eval_recall, eval_f1 = sess.run(eval_ops,
                                                                                                          feed_dict=self.feed_dict(
                                                                                                              each_cross_validation,
-                                                                                                             train=False))
+                                                                                                            train=False))
+                        print "losss:{} acc: {} precision: {} f1: {}".format(eval_loss,eval_acc,eval_precision,eval_f1)
                         loss_arr.append(eval_loss)
-                        acc_arr.append(eval_acc[0])
-                        precision_arr.append(eval_precision[0])
-                        recall_arr.append(eval_recall[0])
-                        f1_arr.append(eval_f1[0])
-
+                        acc_arr.append(eval_acc)
+                        precision_arr.append(eval_precision)
+                        recall_arr.append(eval_recall)
+                        f1_arr.append(eval_f1)
+                    #pdb.set_trace()
                     log_to_file("log.txt","EVALUATION:- loss: {}, acc: {}, precision: {}, recall: {}, f1: {} ".format(
                         np.mean(loss_arr), np.mean(acc_arr), np.mean(precision_arr), np.mean(recall_arr),
                         np.mean(f1_arr)
                     ))
+                    save_json(FLAGS.state_file,"val_loss",np.mean(loss_arr),Type="list")
+                    save_json(FLAGS.state_file,"val_acc",np.mean(acc_arr),Type="list")
+
                 if train_loss < prev_train_loss:
                     prev_train_loss = train_loss
+                    save_json(FLAGS.state_file,"prev_train_loss",prev_train_loss)
                     end = clock()
                     print("Saving the checkpoint")
                     log_to_file(
                         "log.txt","SAVING with TRAINING:- Time:{} per sec, loss: {}, accuracy: {}, precision: {},Recall: {},f1: {}".format(
-                            (end - start), train_loss, acc[0], precision[0], recall[0], f1[0]
+                            (end - start), train_loss, acc, precision, recall, f1
                         ))
                     self.saver.save(sess, self._job_dir.join_path(ckpt_path, "weights-ckpt"),
                                     global_step=self.global_step)

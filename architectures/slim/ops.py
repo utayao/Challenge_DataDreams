@@ -172,7 +172,7 @@ def conv2d(inputs,
            activation=tf.nn.relu,
            stddev=0.01,
            bias=0.0,
-           weight_decay=0,
+           weight_decay=0.001,
            batch_norm_params=None,
            is_training=True,
            trainable=True,
@@ -219,6 +219,7 @@ def conv2d(inputs,
     weights_initializer = tf.truncated_normal_initializer(stddev=stddev)
     l2_regularizer = None
     if weight_decay and weight_decay > 0:
+
       l2_regularizer = losses.l2_regularizer(weight_decay)
     weights = variables.variable('weights',
                                  shape=weights_shape,

@@ -5,7 +5,7 @@ Build tensorflow flags
 import tensorflow as tf
 
 DISPLAY_ITERS = 10
-EVAL_ITERS = 100
+EVAL_ITERS = 50
 SAVE_ITERS = 150
 EVAL_COUNT = 20
 BATCHNORM_MOVING_AVERAGE_DECAY = 0.9997
@@ -14,14 +14,15 @@ IMAGES_MEAN_PATH = "../data"
 IMAGES_STD_PATH = "../data"
 TOWER_NAME = 'tower'
 UPDATE_OPS_COLLECTION  = '_update_ops_'
+
 # File I/O
 tf.app.flags.DEFINE_string("data_dir", "/home/ashwin/Challenge_DataDreams/data", "path where the data is located")
 tf.app.flags.DEFINE_string("train_dir", "results", "path to store train model")
-
+tf.app.flags.DEFINE_string('state_file','/home/ashwin/Challenge_DataDreams/phase_1/state.json','path to store states')
 # Model hyper parameters
 tf.app.flags.DEFINE_integer("batch_size", 16, "Define batch size")
 tf.app.flags.DEFINE_integer("iter", 10000, "Iterations to train the data. Note that this is not epoch")
-tf.app.flags.DEFINE_float("learning_rate", 1e-4, "Learning rate")
+tf.app.flags.DEFINE_float("learning_rate", 1e-3, "Learning rate")
 tf.app.flags.DEFINE_integer("MAX_GRADIENT_NORM", 50, "Maximum Gradient Norm")
 
 # data hyper parameters

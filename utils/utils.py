@@ -6,7 +6,7 @@ from sklearn.feature_extraction import image as sklearn_image
 import pickle
 import matplotlib as mpl
 from functools import partial
-
+import json
 mpl.use('Agg')
 import matplotlib.pyplot as plt
 
@@ -94,6 +94,27 @@ def log_to_file(path, txt):
     logger = logger_func(path)
     logger.info(txt)
 
+def get_json(path):
+    assert os.path.exists(path),"No such file exist"
+    with open(path) as data_file:
+        data = json.loads(data_file.read())
+    return data
+
+def get_state(path,key):
+    data = get_json(path)
+    return data.get(key,None)
+
+def save_json(path,key,value,Type="scalar"):
+    data = get_json(path)
+    if Type.lower() == "list":
+        if key not in data:
+            data[key] = []
+        data[key].append(str(value))
+    else:
+        data[key] = str(value)
+    with open(path,"w") as data_file:
+        json.dump(data,data_file)
+
 def one_hot_vector(labels):
     labels = np.array(labels, dtype=np.int)
     res = np.zeros((labels.size, int(labels.max()) + 1), dtype=np.int64)
@@ -103,7 +124,6 @@ def one_hot_vector(labels):
 
 def extract_patches_2d(image, bounding_box, label, patch_size=(224, 224), max_patches=1):
     x, y, w, h = bounding_box
-    # print bounding_box
     rand_x, rand_y, w, h = np.random.randint(low=x, high=x + w, size=1)[0], \
                            np.random.randint(low=y, high=y + h, size=1)[0], patch_size[0], patch_size[1]
     if (rand_y + h > image.shape[1]):
@@ -146,7 +166,7 @@ def extract_random_patch_from_contour(image, label, patch_size, max_patches, can
 
 def extract_patches(images, labels=None, max_patch=1, patch_size=(224, 224), counter=0, **kwargs):
     if labels is not None:
-        cancer_ratio = kwargs.get("cancer_ratio", 0.75)
+        cancer_ratio = kwargs.get("cancer_ratio", 0.90)
         images = extract_random_patch_from_contour(images[counter], labels[counter], patch_size=patch_size,
                                                    max_patches=max_patch,
                                                    cancer_ratio=cancer_ratio)
