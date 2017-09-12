@@ -89,25 +89,34 @@ class TrainDataGenerator(Generator):
         self.cancer_image_counter = [0, 0]
         self.non_cancer_image_counter = [0, 0]
 
-    def extract_patches(self, number_of_each_cancer_images=0, number_of_each_non_cancer_images=0, save_path=None):
+    def extract_patches(self, number_of_cancer_images=0, number_of_non_cancer_images=0, save_path=None):
         from tqdm import tqdm
         assert self._cv is None, "cv should be None"
         utils.makedir(save_path)
-        for index in tqdm(range(self.cancer_images.shape[0])):
-            utils.display(self.cancer_images[index,:])
-            cancer_patches = utils.extract_random_patch_from_contour(image=self.cancer_images[index, :],
-                                                                     label=self.cancer_labels[index, :],
+        counter = 0
+        while counter < number_of_cancer_images:
+            # utils.display(self.cancer_images[index,:])
+            index = np.random.randint(low=0, high=self.cancer_images.shape[0], size=1)[0]
+            cancer_image = self.cancer_images[index]
+            cancer_label = self.cancer_labels[index]
+            #pdb.set_trace()
+            cancer_patches = utils.extract_random_patch_from_contour(image=cancer_image,
+                                                                     label=cancer_label,
                                                                      patch_size=self._image_resize,
-                                                                     max_patches=number_of_each_cancer_images,
+                                                                     max_patches=1,
                                                                      cancer_ratio=0.9)
-
+            print cancer_patches.shape
             utils.save_array_of_images(cancer_patches, save_path, counter=index, label=1)
+            counter += 1
             del cancer_patches
-        for index in tqdm(range(self.non_cancer_images.shape[0])):
+        counter = 0
+        while counter < number_of_non_cancer_images:
             non_cancer_patches = sklearn_image.extract_patches_2d(self.non_cancer_images[index, :],
                                                                   patch_size=self._image_resize,
-                                                                  max_patches=number_of_each_non_cancer_images)
+                                                                  max_patches=1)
             utils.save_array_of_images(non_cancer_patches, save_path, counter=index, label=0)
+            print  counter
+            counter += 1
         del non_cancer_patches
 
     def sample_batch(self, batch_size, cv, cancer_ratio=0.5, index=0):

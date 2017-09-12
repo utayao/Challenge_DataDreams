@@ -1,6 +1,8 @@
 import os
 import cv2
 import pdb
+import uuid
+import time
 import numpy as np
 from sklearn.feature_extraction import image as sklearn_image
 import pickle
@@ -66,8 +68,8 @@ def read_label(mask_path, binary=False, size=None):
         assert isinstance(size, tuple), "Size is not in tuple"
         img = misc.imresize(img, size)
     if binary:
-        img[img <= 127] = 0
-        img[img > 127] = 1
+        img[img <= 127] = 1
+        img[img > 127] = 0
         return img
     return img
 
@@ -135,10 +137,26 @@ def one_hot_vector(labels):
 
 def save_array_of_images(images_arr, data_path, counter, label):
     for i in range(images_arr.shape[0]):
-        save_image(images_arr[i, :], os.path.join(data_path, str(counter)+'_'+str(i) + '_' + str(label) + '.jpg'))
+        save_image(images_arr[i, :], os.path.join(data_path, str(counter) + '_' + str(i) + '_' + str(label) + '.jpg'))
 
 
-def extract_patches_2d(image, bounding_box, label, patch_size=(224, 224), max_patches=1):
+def extract_patches_2d_new(image, label, bounding_box, patch_size=(224, 224), max_patches=1, cancer_ratio=0.9):
+    x, y, w, h = bounding_box
+    img = image[y: y + h, x:x + w]
+    label_image = label[y: y + h, x:x + w]
+    try:
+
+        images = sklearn_image.extract_patches_2d(label_image, patch_size=patch_size,
+                                                  max_patches=max_patches)
+        # print images.shape
+        #intersection = np.count_nonzero(images[0]) * 1.0 / (patch_size[0] * patch_size[1])
+    except:
+        return None
+
+    return images
+
+
+def extract_patches_2d(image, label, bounding_box, patch_size=(224, 224), max_patches=1):
     x, y, w, h = bounding_box
     rand_x, rand_y, w, h = np.random.randint(low=x, high=x + w, size=1)[0], \
                            np.random.randint(low=y, high=y + h, size=1)[0], patch_size[0], patch_size[1]
@@ -148,12 +166,8 @@ def extract_patches_2d(image, bounding_box, label, patch_size=(224, 224), max_pa
         rand_x -= (rand_x + w - image.shape[0])
 
     label_image = label[rand_y:rand_y + h, rand_x:rand_x + w]
-    intersection = np.count_nonzero(label_image) * 1.0 /(patch_size[0]*patch_size[1])
-    # return label_image,intersection
-    # print bounding_box
-    # print rand_y, rand_x ,h, w
-    #cv2.rectangle(label,(rand_x,rand_y),(rand_x+w,rand_y+h),(255,0,0),2)
-    return image[rand_y:rand_y + h, rand_x:rand_x + w, :], intersection
+    intersection = np.count_nonzero(label_image) * 1.0 / (patch_size[0] * patch_size[1])
+    return image[rand_y:rand_y + h, rand_x:rand_x + w, :], intersection, rand_x, rand_y
 
 
 def extract_random_patch_from_contour(image, label, patch_size, max_patches, cancer_ratio):
@@ -162,22 +176,25 @@ def extract_random_patch_from_contour(image, label, patch_size, max_patches, can
     bounding_boxes = [cv2.boundingRect(c) for c in contours]
     images = []
     counter = 0
-    while counter < max_patches:
+    # while counter < max_patches:
+    start = time.time()
+    while True:
         index = np.random.randint(0, len(bounding_boxes))
         bounding_box_image = bounding_boxes[index]
-        x, y, w, h = bounding_box_image
-        # image_bounding_box = image[y:y + h, x:x + w, :]
-        # display(label)
-        img, intersection = extract_patches_2d(image, bounding_box_image, label, patch_size=patch_size,
-                                               max_patches=1)
-        if intersection > cancer_ratio:
-            images.append(img)
-            counter += 1
-    try:
+        img, intersection, rand_x,rand_y = extract_patches_2d(image, label, bounding_box_image, patch_size=patch_size,
+                                                       max_patches=1)
 
-        return np.array(images)
-    except:
-        traceback.print_exc()
+        if intersection > cancer_ratio:
+            print intersection
+            label_image = label[rand_y:rand_y+patch_size[1],rand_x:rand_x+patch_size[0]]
+            save_image(label_image * 255, str(uuid.uuid4()) + '.png')
+            images.append(img)
+            break
+        if time.time() - start > 30:
+            print 'time out'
+            break
+
+    return np.array(images)
 
 
 def extract_patches(images, labels=None, max_patch=1, patch_size=(224, 224), counter=0, **kwargs):

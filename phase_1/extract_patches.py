@@ -16,7 +16,7 @@ def main(argv=None):
         normalize=False
     )
 
-    train_data.extract_patches(number_of_each_cancer_images=100, number_of_each_non_cancer_images=100,
+    train_data.extract_patches(number_of_cancer_images=100, number_of_non_cancer_images=100,
                                save_path="../data/patches")
 
 
