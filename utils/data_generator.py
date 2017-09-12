@@ -7,6 +7,7 @@ import random
 from sklearn.feature_extraction import image as sklearn_image
 from sklearn.model_selection import KFold
 from data_augmentation import global_funcs, tensor_eval
+
 import utils
 
 
@@ -95,11 +96,9 @@ class TrainDataGenerator(Generator):
         utils.makedir(save_path)
         counter = 0
         while counter < number_of_cancer_images:
-            # utils.display(self.cancer_images[index,:])
             index = np.random.randint(low=0, high=self.cancer_images.shape[0], size=1)[0]
             cancer_image = self.cancer_images[index]
             cancer_label = self.cancer_labels[index]
-            #pdb.set_trace()
             cancer_patches = utils.extract_random_patch_from_contour(image=cancer_image,
                                                                      label=cancer_label,
                                                                      patch_size=self._image_resize,
@@ -109,13 +108,16 @@ class TrainDataGenerator(Generator):
             utils.save_array_of_images(cancer_patches, save_path, counter=index, label=1)
             counter += 1
             del cancer_patches
+
         counter = 0
         while counter < number_of_non_cancer_images:
-            non_cancer_patches = sklearn_image.extract_patches_2d(self.non_cancer_images[index, :],
+            index = np.random.randint(low=0, high=self.non_cancer_images.shape[0], size=1)[0]
+            non_cancer_image = self.non_cancer_images[index]
+
+            non_cancer_patches = sklearn_image.extract_patches_2d(non_cancer_image,
                                                                   patch_size=self._image_resize,
                                                                   max_patches=1)
             utils.save_array_of_images(non_cancer_patches, save_path, counter=index, label=0)
-            print  counter
             counter += 1
         del non_cancer_patches
 
