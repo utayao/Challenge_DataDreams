@@ -61,6 +61,11 @@ def read_image(img_path, size=None):
         return misc.imresize(img, size)
     return img
 
+def read_images_arr(images,size=None):
+    images_arr = []
+    for image in images:
+        images_arr.append(read_image(image, size=size))
+    return np.array(images_arr)
 
 def read_label(mask_path, binary=False, size=None):
     img = ndimage.imread(mask_path, mode='L')

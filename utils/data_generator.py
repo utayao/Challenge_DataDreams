@@ -92,6 +92,7 @@ class TrainDataGenerator(Generator):
 
     def extract_patches(self, number_of_cancer_images=0, number_of_non_cancer_images=0, save_path=None):
         from tqdm import tqdm
+        import uuid
         assert self._cv is None, "cv should be None"
         utils.makedir(save_path)
         counter = 0
@@ -104,10 +105,10 @@ class TrainDataGenerator(Generator):
                                                                      patch_size=self._image_resize,
                                                                      max_patches=1,
                                                                      cancer_ratio=0.9)
-            print cancer_patches.shape
-            utils.save_array_of_images(cancer_patches, save_path, counter=index, label=1)
+            print counter
+            utils.save_array_of_images(cancer_patches, save_path, counter=uuid.uuid4(), label=1)
             counter += 1
-            del cancer_patches
+        del cancer_patches
 
         counter = 0
         while counter < number_of_non_cancer_images:
@@ -117,7 +118,7 @@ class TrainDataGenerator(Generator):
             non_cancer_patches = sklearn_image.extract_patches_2d(non_cancer_image,
                                                                   patch_size=self._image_resize,
                                                                   max_patches=1)
-            utils.save_array_of_images(non_cancer_patches, save_path, counter=index, label=0)
+            utils.save_array_of_images(non_cancer_patches, save_path, counter=uuid.uuid4(), label=0)
             counter += 1
         del non_cancer_patches
 

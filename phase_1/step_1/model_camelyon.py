@@ -142,6 +142,9 @@ class Model(object):
         self.logits, auxiliary_logits, endpoints, self.acc_op = self.build_infer_op(train, True)
         self.acc, self.precision, self.recall, self.f1 = self.build_evaluation_op(endpoints['predictions'],
                                                                                  self.label_op)
+        self.prob_op = endpoints['predictions']
+        self.class_op = tf.argmax(self.prob_op, 1)
+
         if train:
             self.loss = self.build_loss_op(self.logits, auxiliary_logits, self.label_op, batch_size)
             self.build_summary_op(endpoints)
@@ -196,3 +199,10 @@ class Model(object):
     @property
     def infer_op(self):
         return self.acc_op
+
+    @property
+    def validation_infer_ops(self):
+        return (
+                self.prob_op,
+                self.class_op
+                )

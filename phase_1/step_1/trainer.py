@@ -5,7 +5,7 @@ sys.path.append("../")
 import math
 import pdb
 import tensorflow as tf
-from utils.data_generator import TrainDataGenerator
+from utils.data_gen2 import TrainDataGenerator
 import numpy as np
 from model_camelyon import Model
 
@@ -27,8 +27,7 @@ class NetTrainer(object):
         self._job_dir = JobDir(self.train_dir)
         self._batch_size = batch_size
         self._train_data_loader = TrainDataGenerator(
-            train_dir=data_dir, cancer_data_augmentation=cancer_data_augmentation,
-            non_cancer_data_augmentation=non_cancer_data_augmentation,
+            train_dir=data_dir, data_augmentation=cancer_data_augmentation,
             shuffle=True,
             cv=cv,
             image_resize=image_resize,
